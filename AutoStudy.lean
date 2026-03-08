@@ -1,3 +1,8 @@
 import AutoStudy.Basic
 import AutoStudy.Sqrt2Irrational
 import AutoStudy.EnergyConservation
+import AutoStudy.DFT.Basic
+import AutoStudy.DFT.HohenbergKohn
+import AutoStudy.DFT.VariationalPrinciple
+import AutoStudy.DFT.HohenbergKohnSecond
+import AutoStudy.DFT.KohnSham
