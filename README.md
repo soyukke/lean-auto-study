@@ -31,6 +31,8 @@ Lean 4 + Mathlib による数学・物理の形式化プロジェクト。
 - **GGA** (`DFT/GGA.lean`) — 一般化勾配近似の定義、LDA帰着、enhancement factor の有界性
 - **条件充足比較表** (`DFT/Functionals/Comparison.lean`) — LDA/GGAの厳密条件充足の型レベル表現、サイズ整合性証明、改善ターゲットの明示
 - **新汎関数 ACG** (`DFT/Functionals/NewFunctional.lean`) — GGA + 非局所補正による漸近補正汎関数、6/8 厳密条件充足の証明
+- **モデルポテンシャル** (`DFT/ModelPotential.lean`) — エネルギー汎関数を経由しないポテンシャル直接定義の枠組み
+- **LB94** (`DFT/Functionals/LB94.lean`) — van Leeuwen-Baerends 漸近補正ポテンシャル、LDA 帰着・非正性・漸近減衰の証明
 
 全ての定理は `sorry` なしで完全に証明済み。
 

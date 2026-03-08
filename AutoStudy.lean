@@ -18,3 +18,5 @@ import AutoStudy.DFT.LDA
 import AutoStudy.DFT.GGA
 import AutoStudy.DFT.Functionals.Comparison
 import AutoStudy.DFT.Functionals.NewFunctional
+import AutoStudy.DFT.ModelPotential
+import AutoStudy.DFT.Functionals.LB94
