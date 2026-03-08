@@ -18,6 +18,8 @@ Lean 4 + Mathlib による数学・物理の形式化プロジェクト。
 - **変分原理** (`DFT/VariationalPrinciple.lean`) — 基底状態が期待値を最小化、非縮退基底状態の厳密不等式、基底状態エネルギーの一意性
 - **Hohenberg-Kohn 第二定理** (`DFT/HohenbergKohnSecond.lean`) — エネルギー汎関数の最小化、v-表現可能密度
 - **Kohn-Sham 方程式** (`DFT/KohnSham.lean`) — KS系の定式化、密度の非負性と粒子数保存、有効ポテンシャル分解、自己無撞着条件
+- **自己随伴演算子** (`DFT/SelfAdjoint.lean`) — 自己随伴性の定義、異なる固有値の固有状態の直交性、行列要素の性質
+- **Hellmann-Feynman 定理** (`DFT/HellmannFeynman.lean`) — 摂動ハミルトニアンの期待値によるエネルギー変化、固有値摂動関係
 
 全ての定理は `sorry` なしで完全に証明済み。
 

@@ -5,3 +5,5 @@ import AutoStudy.DFT.HohenbergKohn
 import AutoStudy.DFT.VariationalPrinciple
 import AutoStudy.DFT.HohenbergKohnSecond
 import AutoStudy.DFT.KohnSham
+import AutoStudy.DFT.SelfAdjoint
+import AutoStudy.DFT.HellmannFeynman
