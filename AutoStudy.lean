@@ -21,3 +21,5 @@ import AutoStudy.DFT.Functionals.NewFunctional
 import AutoStudy.DFT.ModelPotential
 import AutoStudy.DFT.Functionals.LB94
 import AutoStudy.DFT.Functionals.LB94Asymptotic
+import AutoStudy.DFT.Functionals.NLCExamples
+import AutoStudy.DFT.Functionals.PhysicalNLC
