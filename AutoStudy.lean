@@ -1,4 +1,3 @@
-import AutoStudy.Basic
 import AutoStudy.Sqrt2Irrational
 import AutoStudy.EnergyConservation
 import AutoStudy.DFT.Basic
