@@ -20,3 +20,4 @@ import AutoStudy.DFT.Functionals.Comparison
 import AutoStudy.DFT.Functionals.NewFunctional
 import AutoStudy.DFT.ModelPotential
 import AutoStudy.DFT.Functionals.LB94
+import AutoStudy.DFT.Functionals.LB94Asymptotic

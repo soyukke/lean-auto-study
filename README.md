@@ -33,6 +33,7 @@ Lean 4 + Mathlib による数学・物理の形式化プロジェクト。
 - **新汎関数 ACG** (`DFT/Functionals/NewFunctional.lean`) — GGA + 非局所補正による漸近補正汎関数、6/8 厳密条件充足の証明
 - **モデルポテンシャル** (`DFT/ModelPotential.lean`) — エネルギー汎関数を経由しないポテンシャル直接定義の枠組み
 - **LB94** (`DFT/Functionals/LB94.lean`) — van Leeuwen-Baerends 漸近補正ポテンシャル、LDA 帰着・非正性・漸近減衰の証明
+- **LB94 漸近挙動の完全証明** (`DFT/Functionals/LB94Asymptotic.lean`) — 指数減衰密度に対する LB94 の -1/r 漸近減衰の完全証明（arsinh bounds + squeeze theorem + 因子分解）
 
 全ての定理は `sorry` なしで完全に証明済み。
 
