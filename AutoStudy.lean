@@ -16,3 +16,4 @@ import AutoStudy.DFT.ExactConstraints.Asymptotic
 import AutoStudy.DFT.ExactConstraints.SizeConsistency
 import AutoStudy.DFT.LDA
 import AutoStudy.DFT.GGA
+import AutoStudy.DFT.Functionals.Comparison

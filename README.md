@@ -29,6 +29,7 @@ Lean 4 + Mathlib による数学・物理の形式化プロジェクト。
 - **サイズ整合性** (`DFT/ExactConstraints/SizeConsistency.lean`) — サイズ整合性、局所汎関数のサイズ整合性証明、並進不変性、凸性、正の同次性
 - **LDA** (`DFT/LDA.lean`) — 局所密度近似の定義、交換・相関の非正性証明、Lieb-Oxford限界との整合性
 - **GGA** (`DFT/GGA.lean`) — 一般化勾配近似の定義、LDA帰着、enhancement factor の有界性
+- **条件充足比較表** (`DFT/Functionals/Comparison.lean`) — LDA/GGAの厳密条件充足の型レベル表現、サイズ整合性証明、改善ターゲットの明示
 
 全ての定理は `sorry` なしで完全に証明済み。
 
