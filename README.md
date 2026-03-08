@@ -20,6 +20,12 @@ Lean 4 + Mathlib による数学・物理の形式化プロジェクト。
 - **Kohn-Sham 方程式** (`DFT/KohnSham.lean`) — KS系の定式化、密度の非負性と粒子数保存、有効ポテンシャル分解、自己無撞着条件
 - **自己随伴演算子** (`DFT/SelfAdjoint.lean`) — 自己随伴性の定義、異なる固有値の固有状態の直交性、行列要素の性質
 - **Hellmann-Feynman 定理** (`DFT/HellmannFeynman.lean`) — 摂動ハミルトニアンの期待値によるエネルギー変化、固有値摂動関係
+- **交換相関汎関数** (`DFT/ExchangeCorrelation.lean`) — XCFunctional構造体、局所・半局所汎関数の定義
+- **座標スケーリング** (`DFT/Scaling.lean`) — 密度のスケーリング変換、合成則、スケーリング条件
+- **汎関数微分** (`DFT/FunctionalDerivative.lean`) — Gateaux微分としての定義、線形汎関数の微分、加法性・スカラー倍
+- **厳密条件** (`DFT/ExactConstraints.lean`) — 非正性、Lieb-Oxford限界、自己相互作用補正、均一密度極限
+- **LDA** (`DFT/LDA.lean`) — 局所密度近似の定義、交換・相関の非正性証明、Lieb-Oxford限界との整合性
+- **GGA** (`DFT/GGA.lean`) — 一般化勾配近似の定義、LDA帰着、enhancement factor の有界性
 
 全ての定理は `sorry` なしで完全に証明済み。
 

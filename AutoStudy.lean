@@ -7,3 +7,9 @@ import AutoStudy.DFT.HohenbergKohnSecond
 import AutoStudy.DFT.KohnSham
 import AutoStudy.DFT.SelfAdjoint
 import AutoStudy.DFT.HellmannFeynman
+import AutoStudy.DFT.ExchangeCorrelation
+import AutoStudy.DFT.Scaling
+import AutoStudy.DFT.FunctionalDerivative
+import AutoStudy.DFT.ExactConstraints
+import AutoStudy.DFT.LDA
+import AutoStudy.DFT.GGA
