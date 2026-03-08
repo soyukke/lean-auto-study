@@ -24,6 +24,9 @@ Lean 4 + Mathlib による数学・物理の形式化プロジェクト。
 - **座標スケーリング** (`DFT/Scaling.lean`) — 密度のスケーリング変換、合成則、スケーリング条件
 - **汎関数微分** (`DFT/FunctionalDerivative.lean`) — Gateaux微分としての定義、線形汎関数の微分、加法性・スカラー倍
 - **厳密条件** (`DFT/ExactConstraints.lean`) — 非正性、Lieb-Oxford限界、自己相互作用補正、均一密度極限
+- **和則** (`DFT/ExactConstraints/SumRules.lean`) — 交換・相関ホールの和則、ホールの非正性、交換相関ホールの和則定理
+- **漸近的性質** (`DFT/ExactConstraints/Asymptotic.lean`) — 長距離挙動、高密度・低密度極限、スピンスケーリング、スケーリング下の相関非正性
+- **サイズ整合性** (`DFT/ExactConstraints/SizeConsistency.lean`) — サイズ整合性、局所汎関数のサイズ整合性証明、並進不変性、凸性、正の同次性
 - **LDA** (`DFT/LDA.lean`) — 局所密度近似の定義、交換・相関の非正性証明、Lieb-Oxford限界との整合性
 - **GGA** (`DFT/GGA.lean`) — 一般化勾配近似の定義、LDA帰着、enhancement factor の有界性
 
