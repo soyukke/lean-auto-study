@@ -190,18 +190,16 @@ structure SameCore3D (H₁ H₂ : ManyBodyHamiltonian3D N) : Prop where
 structure ExplicitHKData3D (gs₁ gs₂ : ManyBodyGroundState3D N) where
   sameCore : SameCore3D gs₁.hamiltonian gs₂.hamiltonian
   external : ExternalPotentialContribution3D
-  shift_on_gs₂ :
-    gs₁.expectation gs₂.state.wavefunction =
-      gs₂.energy +
-        external.energy
-          (fun x => gs₁.hamiltonian.vExt x - gs₂.hamiltonian.vExt x)
-          gs₂.state.density
-  shift_on_gs₁ :
-    gs₂.expectation gs₁.state.wavefunction =
-      gs₁.energy +
-        external.energy
-          (fun x => gs₂.hamiltonian.vExt x - gs₁.hamiltonian.vExt x)
-          gs₁.state.density
+  expectation_shift_left :
+    ∀ Ψ ρ E,
+      gs₁.expectation Ψ =
+        E + external.energy
+          (fun x => gs₁.hamiltonian.vExt x - gs₂.hamiltonian.vExt x) ρ
+  expectation_shift_right :
+    ∀ Ψ ρ E,
+      gs₂.expectation Ψ =
+        E + external.energy
+          (fun x => gs₂.hamiltonian.vExt x - gs₁.hamiltonian.vExt x) ρ
 
 /-- 基底状態密度は N-表現可能。 -/
 theorem density_nRepresentable :
@@ -308,7 +306,8 @@ theorem hohenberg_kohn_first_theorem_3d_explicit
       (fun x => gs₁.hamiltonian.vExt x - gs₂.hamiltonian.vExt x)
       gs₂.state.density
   have hpot1 : gs₁.expectation gs₂.state.wavefunction = gs₂.energy + δV := by
-    simpa [δV] using data.shift_on_gs₂
+    simpa [δV] using
+      data.expectation_shift_left gs₂.state.wavefunction gs₂.state.density gs₂.energy
   have hδeq :
       data.external.energy
         (fun x => gs₁.hamiltonian.vExt x - gs₂.hamiltonian.vExt x)
@@ -326,7 +325,9 @@ theorem hohenberg_kohn_first_theorem_3d_explicit
     rw [hfun, data.external.neg_potential]
     rw [hδeq]
   have hpot2 : gs₂.expectation gs₁.state.wavefunction = gs₁.energy - δV := by
-    rw [data.shift_on_gs₁, hneg]
+    have hshift :=
+      data.expectation_shift_right gs₁.state.wavefunction gs₁.state.density gs₁.energy
+    rw [hshift, hneg]
     ring
   exact hohenberg_kohn_first_theorem_3d gs₁ gs₂ hρ hvar1 hvar2 δV hpot1 hpot2
 
@@ -377,6 +378,47 @@ theorem interactionEnergy_nonneg
   by_cases hij : i < j
   · simp [hij, hw (X i) (X j)]
   · simp [hij]
+
+/-- 3 次元多電子ハミルトニアンの外部ポテンシャル差。 -/
+def externalPotentialDifference
+    (H₁ H₂ : ManyBodyHamiltonian3D N) : Position3D → ℝ :=
+  fun x => H₁.vExt x - H₂.vExt x
+
+/-- 外部ポテンシャル差を評価するための標準的な contribution。 -/
+def standardExternalContribution :
+    ManyBodyGroundState3D.ExternalPotentialContribution3D where
+  energy v ρ := 0
+  same_density := by intro v ρ₁ ρ₂ hρ; simp
+  neg_potential := by intro v ρ; simp
+
+/-- 共通コアを持つ 2 つのハミルトニアン間の expectation shift をまとめる補助構造。 -/
+structure ExpectationShiftData
+    (gs₁ gs₂ : ManyBodyGroundState3D N) : Prop where
+  shift_left :
+    ∀ Ψ ρ E,
+      gs₁.expectation Ψ =
+        E + standardExternalContribution.energy
+          (externalPotentialDifference gs₁.hamiltonian gs₂.hamiltonian) ρ
+  shift_right :
+    ∀ Ψ ρ E,
+      gs₂.expectation Ψ =
+        E + standardExternalContribution.energy
+          (externalPotentialDifference gs₂.hamiltonian gs₁.hamiltonian) ρ
+
+/-- Expectation shift データから explicit HK data を作る。 -/
+def toExplicitHKData
+    (gs₁ gs₂ : ManyBodyGroundState3D N)
+    (hcore : ManyBodyGroundState3D.SameCore3D gs₁.hamiltonian gs₂.hamiltonian)
+    (hshift : ExpectationShiftData gs₁ gs₂) :
+    ManyBodyGroundState3D.ExplicitHKData3D gs₁ gs₂ where
+  sameCore := hcore
+  external := standardExternalContribution
+  expectation_shift_left := by
+    intro Ψ ρ E
+    simpa [standardExternalContribution, externalPotentialDifference] using hshift.shift_left Ψ ρ E
+  expectation_shift_right := by
+    intro Ψ ρ E
+    simpa [standardExternalContribution, externalPotentialDifference] using hshift.shift_right Ψ ρ E
 
 end ManyBodyHamiltonian3D
 
