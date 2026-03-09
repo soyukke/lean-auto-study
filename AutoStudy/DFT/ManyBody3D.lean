@@ -223,6 +223,62 @@ theorem antisymmetric_wavefunction :
     IsAntisymmetric gs.state.wavefunction :=
   gs.state.antisymmetric
 
+/-- 3 次元多電子版 Rayleigh-Ritz 下界。 -/
+theorem rayleigh_ritz_lower_bound
+    (Ψ : ManyBodyWavefunction3D N) (hΨ : gs.isNormalized Ψ) :
+    gs.energy ≤ gs.expectation Ψ :=
+  gs.variational Ψ hΨ
+
+/-- 基底状態波動関数がエネルギー最小化を達成することの言い換え。 -/
+theorem rayleigh_ritz_minimizer
+    (Ψ : ManyBodyWavefunction3D N) (hΨ : gs.isNormalized Ψ) :
+    gs.expectation gs.state.wavefunction = gs.energy ∧
+      gs.expectation gs.state.wavefunction ≤ gs.expectation Ψ := by
+  constructor
+  · exact gs.expectation_eq
+  · rw [gs.expectation_eq]
+    exact gs.variational Ψ hΨ
+
+/-- 同一ハミルトニアン・同一期待値写像なら基底状態エネルギーは一意。 -/
+theorem unique_ground_energy
+    (gs₁ gs₂ : ManyBodyGroundState3D N)
+    (hH : gs₁.hamiltonian = gs₂.hamiltonian)
+    (hNorm : gs₁.isNormalized = gs₂.isNormalized)
+    (hExp : gs₁.expectation = gs₂.expectation) :
+    gs₁.energy = gs₂.energy := by
+  let _ := hH
+  have hle₁ : gs₁.energy ≤ gs₂.energy := by
+    have h := gs₁.variational gs₂.state.wavefunction (by simpa [hNorm] using gs₂.state_normalized)
+    rw [hExp, gs₂.expectation_eq] at h
+    exact h
+  have hle₂ : gs₂.energy ≤ gs₁.energy := by
+    have h := gs₂.variational gs₁.state.wavefunction (by simpa [hNorm] using gs₁.state_normalized)
+    rw [← hExp, gs₁.expectation_eq] at h
+    exact h
+  linarith
+
+/-- 2 つの基底状態のエネルギーを比較するための基本不等式。 -/
+theorem compare_ground_energies
+    (gs₁ gs₂ : ManyBodyGroundState3D N)
+    (hNorm12 : gs₁.isNormalized gs₂.state.wavefunction)
+    (hNorm21 : gs₂.isNormalized gs₁.state.wavefunction) :
+    gs₁.energy ≤ gs₁.expectation gs₂.state.wavefunction ∧
+      gs₂.energy ≤ gs₂.expectation gs₁.state.wavefunction := by
+  constructor
+  · exact gs₁.variational _ hNorm12
+  · exact gs₂.variational _ hNorm21
+
+/-- 基底状態密度が満たす最小の admissibility 条件。 -/
+def DensityAdmissible (ρ : Position3D → ℝ) : Prop :=
+  IsNRepresentable3D N ρ ∧ ∀ x, 0 ≤ ρ x
+
+/-- 基底状態密度は admissible。 -/
+theorem density_admissible :
+    DensityAdmissible (N := N) gs.state.density := by
+  constructor
+  · exact gs.density_nRepresentable
+  · exact gs.state.density_nonneg
+
 /-- 多電子 3 次元版 Hohenberg-Kohn 第一定理の抽象形。 -/
 theorem hohenberg_kohn_first_theorem_3d
     (gs₁ gs₂ : ManyBodyGroundState3D N)
