@@ -67,6 +67,19 @@ theorem unique_ground_energy (gs₁ gs₂ : GroundState) (hH : gs₁.H = gs₂.H
     rw [← hH, gs₁.expectation_eq] at h
     exact h
 
+/-- Rayleigh-Ritz 型の性質: 基底状態エネルギーは正規化状態全体での下界。 -/
+theorem rayleigh_ritz_lower_bound (φ : ℝ → ℝ) (hφ : IsNormalized φ) :
+    gs.E₀ ≤ expectationValue gs.H φ :=
+  gs.variational φ hφ
+
+/-- Rayleigh 商が基底状態で最小値を取ることの言い換え。 -/
+theorem rayleigh_ritz_minimizer (φ : ℝ → ℝ) (hφ : IsNormalized φ) :
+    expectationValue gs.H gs.ψ₀ = gs.E₀ ∧
+    expectationValue gs.H gs.ψ₀ ≤ expectationValue gs.H φ := by
+  constructor
+  · exact gs.expectation_eq
+  · exact gs.minimizes_energy φ hφ
+
 end GroundState
 
 end DFT

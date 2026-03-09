@@ -12,8 +12,9 @@
     辺々加えると E₁ + E₂ < E₁ + E₂ となり矛盾。
 -/
 import AutoStudy.DFT.Basic
+import AutoStudy.DFT.ExplicitHamiltonian
 
-open DFT
+open MeasureTheory DFT
 
 /-- Hohenberg-Kohn の第一定理
 
@@ -53,3 +54,78 @@ theorem hohenberg_kohn_first_theorem
   rw [hpot2, hE₁] at hvar2
   -- Step 3: E₁ < E₂ + δV かつ E₂ < E₁ - δV → E₁ + E₂ < E₁ + E₂ (矛盾)
   linarith
+
+/-- 明示的ハミルトニアンから Hohenberg-Kohn の仮定 hpot1/hpot2 を導く補助定理。
+
+    2 つのハミルトニアンが運動項と相互作用項を共有し、
+    外部ポテンシャルだけが異なるとき、任意の波動関数に対する期待値差は
+    外部ポテンシャル差の密度積分で表される。 -/
+theorem explicit_hamiltonian_expectation_shift
+    (H₁ H₂ : ExplicitHamiltonian)
+    (hKinetic : H₁.kinetic = H₂.kinetic)
+    (hInteraction : H₁.interaction = H₂.interaction)
+    (ψ : ℝ → ℝ)
+    (hint₁ : H₁.IntegrableState ψ)
+    (hint₂ : H₂.IntegrableState ψ) :
+    expectationValue H₁.toOperator ψ =
+      expectationValue H₂.toOperator ψ + externalEnergy (fun x => H₁.vExt x - H₂.vExt x) ψ := by
+  have hdiff := ExplicitHamiltonian.expectation_difference_of_same_core
+    H₁ H₂ ψ hKinetic hInteraction hint₁ hint₂
+  linarith
+
+/-- 同じ密度を持つ 2 つの波動関数に対して、外部ポテンシャル差の期待値は一致する。 -/
+theorem externalEnergy_eq_of_same_density
+    (v : ℝ → ℝ) (ψ₁ ψ₂ : ℝ → ℝ)
+    (hρ : electronDensity ψ₁ = electronDensity ψ₂) :
+    externalEnergy v ψ₁ = externalEnergy v ψ₂ := by
+  repeat rw [ExplicitHamiltonian.externalEnergy_eq]
+  rw [hρ]
+
+/-- 明示的ハミルトニアン版 Hohenberg-Kohn 第一定理。
+
+    hpot1, hpot2 を直接仮定する代わりに、
+    共通の運動項・相互作用項と同一密度から矛盾を導く。 -/
+theorem hohenberg_kohn_first_theorem_explicit
+    (H₁ H₂ : ExplicitHamiltonian)
+    (ψ₁ ψ₂ : ℝ → ℝ)
+    (E₁ E₂ : ℝ)
+    (hnorm1 : IsNormalized ψ₁)
+    (hnorm2 : IsNormalized ψ₂)
+    (heig1 : IsEigenstate H₁.toOperator ψ₁ E₁)
+    (heig2 : IsEigenstate H₂.toOperator ψ₂ E₂)
+    (hvar1 : E₁ < expectationValue H₁.toOperator ψ₂)
+    (hvar2 : E₂ < expectationValue H₂.toOperator ψ₁)
+    (hKinetic : H₁.kinetic = H₂.kinetic)
+    (hInteraction : H₁.interaction = H₂.interaction)
+    (hρ : electronDensity ψ₁ = electronDensity ψ₂)
+    (hint12₁ : H₁.IntegrableState ψ₂)
+    (hint12₂ : H₂.IntegrableState ψ₂)
+    (hint21₁ : H₁.IntegrableState ψ₁)
+    (hint21₂ : H₂.IntegrableState ψ₁) :
+    False := by
+  let δV : ℝ := externalEnergy (fun x => H₁.vExt x - H₂.vExt x) ψ₂
+  have hpot1 : expectationValue H₁.toOperator ψ₂ = expectationValue H₂.toOperator ψ₂ + δV := by
+    dsimp [δV]
+    exact explicit_hamiltonian_expectation_shift H₁ H₂ hKinetic hInteraction ψ₂ hint12₁ hint12₂
+  have hδeq : externalEnergy (fun x => H₁.vExt x - H₂.vExt x) ψ₁ = δV := by
+    dsimp [δV]
+    exact externalEnergy_eq_of_same_density
+      (fun x => H₁.vExt x - H₂.vExt x) ψ₁ ψ₂ hρ
+  have hpot2' : expectationValue H₂.toOperator ψ₁ = expectationValue H₁.toOperator ψ₁ -
+      externalEnergy (fun x => H₁.vExt x - H₂.vExt x) ψ₁ := by
+    have h := explicit_hamiltonian_expectation_shift H₂ H₁ hKinetic.symm hInteraction.symm ψ₁ hint21₂ hint21₁
+    have hneg : externalEnergy (fun x => H₂.vExt x - H₁.vExt x) ψ₁ =
+        - externalEnergy (fun x => H₁.vExt x - H₂.vExt x) ψ₁ := by
+      repeat rw [ExplicitHamiltonian.externalEnergy_eq]
+      have hEq : (fun x => (H₂.vExt x - H₁.vExt x) * electronDensity ψ₁ x) =
+          (fun x => -((H₁.vExt x - H₂.vExt x) * electronDensity ψ₁ x)) := by
+        ext x
+        ring
+      rw [hEq, integral_neg]
+    rw [hneg] at h
+    linarith
+  have hpot2 : expectationValue H₂.toOperator ψ₁ = expectationValue H₁.toOperator ψ₁ - δV := by
+    rw [hδeq] at hpot2'
+    exact hpot2'
+  exact hohenberg_kohn_first_theorem H₁.toOperator H₂.toOperator ψ₁ ψ₂ E₁ E₂
+    hnorm1 hnorm2 heig1 heig2 hvar1 hvar2 δV hpot1 hpot2

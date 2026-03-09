@@ -1,6 +1,8 @@
 import AutoStudy.Sqrt2Irrational
 import AutoStudy.EnergyConservation
 import AutoStudy.DFT.Basic
+import AutoStudy.DFT.ManyBody3D
+import AutoStudy.DFT.ExplicitHamiltonian
 import AutoStudy.DFT.HohenbergKohn
 import AutoStudy.DFT.VariationalPrinciple
 import AutoStudy.DFT.HohenbergKohnSecond
@@ -23,3 +25,4 @@ import AutoStudy.DFT.Functionals.LB94
 import AutoStudy.DFT.Functionals.LB94Asymptotic
 import AutoStudy.DFT.Functionals.NLCExamples
 import AutoStudy.DFT.Functionals.PhysicalNLC
+import AutoStudy.DFT.Functionals.KernelNLC

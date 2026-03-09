@@ -18,6 +18,7 @@
     - 自己無撞着条件の定式化
 -/
 import AutoStudy.DFT.Basic
+import AutoStudy.DFT.FunctionalDerivative
 
 open MeasureTheory DFT Finset
 
@@ -95,6 +96,90 @@ structure SelfConsistent (N : ℕ) where
   potentialFromDensity : (ℝ → ℝ) → (ℝ → ℝ)
   /-- 自己無撞着条件: v_eff = potentialFromDensity(ρ_KS) -/
   consistent : ks.v_eff = potentialFromDensity ks.density
+
+namespace SelfConsistent
+
+variable {N : ℕ} (sc : SelfConsistent N)
+
+/-- 自己無撞着条件の点ごとの形。 -/
+theorem consistent_apply (x : ℝ) :
+    sc.ks.v_eff x = sc.potentialFromDensity sc.ks.density x :=
+  congr_fun sc.consistent x
+
+end SelfConsistent
+
+/-- エネルギー汎関数の停留点から有効ポテンシャルが得られる Kohn-Sham 系。 -/
+structure KohnShamFromFunctionalDerivative (N : ℕ) where
+  ks : KohnShamSystem N
+  E_total : (ℝ → ℝ) → ℝ
+  potentialFromDerivative : HasFunctionalDerivative E_total ks.density ks.v_eff
+
+namespace KohnShamFromFunctionalDerivative
+
+variable {N : ℕ} (ksfd : KohnShamFromFunctionalDerivative N)
+
+/-- 停留条件は、任意の摂動 η に対する一次変分が
+    有効ポテンシャルとの内積で与えられることを意味する。 -/
+theorem first_variation_eq (η : ℝ → ℝ) :
+    HasDerivAt
+      (fun ε => ksfd.E_total (fun x => ksfd.ks.density x + ε * η x))
+      (innerProduct ksfd.ks.v_eff η) 0 :=
+  ksfd.potentialFromDerivative η
+
+/-- Kohn-Sham 停留条件の Euler-Lagrange 形式。
+    全エネルギー汎関数の一次変分は有効ポテンシャルで表される。 -/
+theorem euler_lagrange_density (η : ℝ → ℝ) :
+    HasDerivAt
+      (fun ε => ksfd.E_total (fun x => ksfd.ks.density x + ε * η x))
+      (innerProduct ksfd.ks.v_eff η) 0 :=
+  ksfd.first_variation_eq η
+
+/-- 停留条件のデータを FunctionalDerivative 側の構造体に落とす。 -/
+noncomputable def toKSPotentialFromDerivative : KSPotentialFromDerivative where
+  E_total := ksfd.E_total
+  ρ := ksfd.ks.density
+  v_eff := ksfd.ks.v_eff
+  is_derivative := ksfd.potentialFromDerivative
+
+/-- 停留条件を potentialFromDensity と組み合わせるための自己無撞着版。 -/
+structure SelfConsistentFromDerivative where
+  selfConsistent : SelfConsistent N
+  E_total : (ℝ → ℝ) → ℝ
+  derivative : HasFunctionalDerivative E_total selfConsistent.ks.density selfConsistent.ks.v_eff
+
+variable (scfd : SelfConsistentFromDerivative (N := N))
+
+/-- 自己無撞着な Kohn-Sham 系では、汎関数微分と密度から構成したポテンシャルが一致する。 -/
+theorem derivative_matches_density_potential (x : ℝ) :
+    scfd.selfConsistent.ks.v_eff x =
+      scfd.selfConsistent.potentialFromDensity scfd.selfConsistent.ks.density x :=
+  scfd.selfConsistent.consistent_apply x
+
+/-- 自己無撞着な停留条件の一次変分形。 -/
+theorem first_variation_eq_density_potential (η : ℝ → ℝ) :
+    HasDerivAt
+      (fun ε => scfd.E_total (fun x => scfd.selfConsistent.ks.density x + ε * η x))
+      (innerProduct
+        (scfd.selfConsistent.potentialFromDensity scfd.selfConsistent.ks.density) η) 0 := by
+  have hderiv := scfd.derivative η
+  have hpot : innerProduct scfd.selfConsistent.ks.v_eff η =
+      innerProduct (scfd.selfConsistent.potentialFromDensity scfd.selfConsistent.ks.density) η := by
+    unfold innerProduct
+    congr 1
+    ext x
+    rw [derivative_matches_density_potential scfd x]
+  exact hpot ▸ hderiv
+
+/-- 自己無撞着な Kohn-Sham 系の Euler-Lagrange 形式。
+    停留条件に現れる有効ポテンシャルは density-to-potential 写像で与えられる。 -/
+theorem euler_lagrange_self_consistent (η : ℝ → ℝ) :
+    HasDerivAt
+      (fun ε => scfd.E_total (fun x => scfd.selfConsistent.ks.density x + ε * η x))
+      (innerProduct
+        (scfd.selfConsistent.potentialFromDensity scfd.selfConsistent.ks.density) η) 0 :=
+  first_variation_eq_density_potential scfd η
+
+end KohnShamFromFunctionalDerivative
 
 /-- Kohn-Sham 全エネルギー:
     E_KS = Σᵢ εᵢ - E_Hartree[ρ] + E_xc[ρ] - ∫ v_xc(x)ρ(x) dx
