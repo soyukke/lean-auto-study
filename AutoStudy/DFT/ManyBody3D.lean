@@ -171,6 +171,32 @@ structure ManyBodyGroundState3D (N : ℕ) where
   expectation_eq : expectation state.wavefunction = energy
   variational : ∀ Ψ, isNormalized Ψ → energy ≤ expectation Ψ
 
+/-- 3 次元密度汎関数の最小抽象。 -/
+structure DensityFunctional3D (N : ℕ) where
+  energy : (Position3D → ℝ) → ℝ
+  admissible : (Position3D → ℝ) → Prop
+
+namespace DensityFunctional3D
+
+variable {N : ℕ} (DF : DensityFunctional3D N)
+
+/-- 許容密度のクラス上での最小化。 -/
+def MinimizesOnAdmissible (ρ₀ : Position3D → ℝ) : Prop :=
+  DF.admissible ρ₀ ∧ ∀ ⦃ρ⦄, DF.admissible ρ → DF.energy ρ₀ ≤ DF.energy ρ
+
+end DensityFunctional3D
+
+/-- 3 次元多電子版の抽象 constrained-search データ。 -/
+structure ConstrainedSearchModel3D {N : ℕ}
+    (gs : ManyBodyGroundState3D N) (DF : DensityFunctional3D N) where
+  ground_admissible : DF.admissible gs.state.density
+  ground_energy_eq : DF.energy gs.state.density = gs.energy
+  realize : ∀ {ρ}, DF.admissible ρ →
+    ∃ state : ManyBodyState3D N,
+      state.density = ρ ∧
+      gs.isNormalized state.wavefunction ∧
+      DF.energy ρ = gs.expectation state.wavefunction
+
 namespace ManyBodyGroundState3D
 
 variable {N : ℕ} (gs : ManyBodyGroundState3D N)
@@ -276,6 +302,26 @@ theorem density_admissible :
   constructor
   · exact gs.density_nRepresentable
   · exact gs.state.density_nonneg
+
+/-- 抽象 constrained-search データがあれば、基底状態密度は密度汎関数を最小化する。 -/
+theorem ground_state_density_minimizes
+    (DF : DensityFunctional3D N)
+    (model : ConstrainedSearchModel3D gs DF) :
+    DF.MinimizesOnAdmissible gs.state.density := by
+  constructor
+  · exact model.ground_admissible
+  · intro ρ hρ
+    rcases model.realize hρ with ⟨state, hstateρ, hnorm, henergy⟩
+    rw [model.ground_energy_eq]
+    rw [henergy]
+    exact gs.variational state.wavefunction hnorm
+
+/-- 3 次元多電子版 Hohenberg-Kohn 第二定理の抽象形。 -/
+theorem hohenberg_kohn_second_theorem_3d
+    (DF : DensityFunctional3D N)
+    (model : ConstrainedSearchModel3D gs DF) :
+    DF.MinimizesOnAdmissible gs.state.density :=
+  gs.ground_state_density_minimizes DF model
 
 /-- 多電子 3 次元版 Hohenberg-Kohn 第一定理の抽象形。 -/
 theorem hohenberg_kohn_first_theorem_3d
