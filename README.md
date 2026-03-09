@@ -36,6 +36,7 @@ Lean 4 + Mathlib による数学・物理の形式化プロジェクト。
 - **LB94 漸近挙動の完全証明** (`DFT/Functionals/LB94Asymptotic.lean`) — 指数減衰密度に対する LB94 の -1/r 漸近減衰の完全証明（arsinh bounds + squeeze theorem + 因子分解）
 - **非局所補正の具体例** (`DFT/Functionals/NLCExamples.lean`) — NonLocalCorrection の4つの具体的インスタンス（自明・点差分・離散ラプラシアン・Coulomb）、公理系の無矛盾性証明
 - **変分的非局所補正** (`DFT/Functionals/PhysicalNLC.lean`) — E[ρ] = -∫(ρ(x)-ρ(x+1))²dx に対する v = δE/δρ（離散ラプラシアン）の変分関係の完全証明、平行移動不変性による交差項の内積表現
+- **カーネル型非局所汎関数** (`DFT/Functionals/KernelNLC.lean`) — E[ρ] = -∬ρ(x)K(x-y)ρ(y)dxdy に対する v = -2(K*ρ) の変分関係の完全証明、Fubini の定理によるカーネル対称性
 
 全ての定理は `sorry` なしで完全に証明済み。
 
