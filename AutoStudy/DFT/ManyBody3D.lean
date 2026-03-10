@@ -8,8 +8,12 @@
 -/
 import AutoStudy.DFT.Basic
 import Mathlib.Data.Complex.Basic
+import Mathlib.MeasureTheory.Measure.Prod
+import Mathlib.MeasureTheory.Constructions.Pi
 
-open Finset Complex
+noncomputable section
+
+open Finset Complex MeasureTheory
 
 namespace DFT
 
@@ -29,10 +33,22 @@ abbrev ManyBodyWavefunction3D (N : ℕ) := Configuration3D N → ℂ
 def probabilityDensity3D (ψ : SingleWavefunction3D) : Position3D → ℝ :=
   fun x => Complex.normSq (ψ x)
 
+/-- 3 次元実空間の密度積分。 -/
+def densityIntegral3D (ρ : Position3D → ℝ) : ℝ :=
+  ∫ x, ρ x ∂MeasureTheory.Measure.pi
+    (fun _ : Fin 3 => (MeasureTheory.volume : MeasureTheory.Measure ℝ))
+
 /-- 多体波動関数の配置空間密度 |Ψ|^2。 -/
 def manyBodyProbabilityDensity {N : ℕ}
     (Ψ : ManyBodyWavefunction3D N) : Configuration3D N → ℝ :=
   fun X => Complex.normSq (Ψ X)
+
+/-- 波動関数由来の 1 粒子密度を与える抽象化。
+    concrete 化の最初の段階として、密度回収と粒子数積分だけを固定する。 -/
+structure DensityProjection3D (N : ℕ) where
+  densityOf : ManyBodyWavefunction3D N → Position3D → ℝ
+  nonneg : ∀ Ψ x, 0 ≤ densityOf Ψ x
+  integral_eq_particleNumber : ∀ Ψ, densityIntegral3D (densityOf Ψ) = N
 
 /-- 3 次元 1 粒子密度は非負。 -/
 theorem probabilityDensity3D_nonneg (ψ : SingleWavefunction3D) (x : Position3D) :
@@ -124,8 +140,23 @@ structure DensityRealization3D (N : ℕ) where
   densityFromWavefunction : ManyBodyWavefunction3D N → Position3D → ℝ
   particleNumberFromWavefunction : ManyBodyWavefunction3D N → ℝ
   density_nonneg : ∀ Ψ x, 0 ≤ densityFromWavefunction Ψ x
+  particle_number_eq_density_integral :
+    ∀ Ψ, particleNumberFromWavefunction Ψ = densityIntegral3D (densityFromWavefunction Ψ)
   particle_number_of_antisymmetric :
     ∀ Ψ, IsAntisymmetric Ψ → particleNumberFromWavefunction Ψ = N
+
+/-- DensityProjection3D から DensityRealization3D を構成する。 -/
+def DensityProjection3D.toDensityRealization {N : ℕ}
+    (proj : DensityProjection3D N) : DensityRealization3D N where
+  densityFromWavefunction := proj.densityOf
+  particleNumberFromWavefunction := fun Ψ => densityIntegral3D (proj.densityOf Ψ)
+  density_nonneg := proj.nonneg
+  particle_number_eq_density_integral := by
+    intro Ψ
+    rfl
+  particle_number_of_antisymmetric := by
+    intro Ψ _
+    exact proj.integral_eq_particleNumber Ψ
 
 /-- abstract state に concrete な density realization を接続したもの。 -/
 structure ConcreteManyBodyState3D (N : ℕ) where
@@ -173,10 +204,23 @@ theorem particle_number_from_realization :
       cstate.realization.particleNumberFromWavefunction cstate.state.wavefunction :=
   cstate.particle_number_def
 
+/-- concrete realization では粒子数は密度積分に一致する。 -/
+theorem particle_number_eq_density_integral :
+    cstate.state.particle_number = densityIntegral3D cstate.state.density := by
+  rw [cstate.particle_number_def]
+  rw [cstate.realization.particle_number_eq_density_integral]
+  rw [← cstate.density_def]
+
 /-- 反対称な concrete state の粒子数は N。 -/
 theorem particle_number_eq_nat :
     cstate.realization.particleNumberFromWavefunction cstate.state.wavefunction = N := by
   exact cstate.realization.particle_number_of_antisymmetric _ cstate.state.antisymmetric
+
+/-- concrete state の密度積分は粒子数 N に等しい。 -/
+theorem density_integral_eq_nat :
+    densityIntegral3D cstate.state.density = N := by
+  rw [← cstate.particle_number_eq_density_integral]
+  rw [cstate.state.particle_number_eq]
 
 end ConcreteManyBodyState3D
 
@@ -197,6 +241,24 @@ theorem nRepresentable3D_particle_number {N : ℕ} {ρ : Position3D → ℝ}
     ∃ state : ManyBodyState3D N, state.density = ρ ∧ state.particle_number = N := by
   rcases hρ with ⟨state, rfl⟩
   exact ⟨state, rfl, state.particle_number_eq⟩
+
+/-- concrete な意味で N-表現可能な密度。 -/
+def IsConcreteNRepresentable3D (N : ℕ) (ρ : Position3D → ℝ) : Prop :=
+  ∃ cstate : ConcreteManyBodyState3D N, cstate.state.density = ρ
+
+/-- concrete な N-表現可能密度は abstract な意味でも N-表現可能。 -/
+theorem concreteNRepresentable_implies_abstract {N : ℕ} {ρ : Position3D → ℝ}
+    (hρ : IsConcreteNRepresentable3D N ρ) :
+    IsNRepresentable3D N ρ := by
+  rcases hρ with ⟨cstate, rfl⟩
+  exact ⟨cstate.state, rfl⟩
+
+/-- concrete な N-表現可能密度の積分は粒子数 N。 -/
+theorem concreteNRepresentable_density_integral {N : ℕ} {ρ : Position3D → ℝ}
+    (hρ : IsConcreteNRepresentable3D N ρ) :
+    densityIntegral3D ρ = N := by
+  rcases hρ with ⟨cstate, rfl⟩
+  exact cstate.density_integral_eq_nat
 
 /-- 3 次元多電子ハミルトニアンの最小モデル。 -/
 structure ManyBodyHamiltonian3D (N : ℕ) where
@@ -251,6 +313,37 @@ structure ExternalPotentialContribution3D where
   energy : (Position3D → ℝ) → (Position3D → ℝ) → ℝ
   same_density : ∀ {v ρ₁ ρ₂}, ρ₁ = ρ₂ → energy v ρ₁ = energy v ρ₂
   neg_potential : ∀ v ρ, energy (fun x => -v x) ρ = -energy v ρ
+
+/-- 外部ポテンシャル寄与の concrete な積分形 ∫ vρ。 -/
+def concreteExternalEnergy3D (v ρ : Position3D → ℝ) : ℝ :=
+  ∫ x, v x * ρ x ∂MeasureTheory.Measure.pi
+    (fun _ : Fin 3 => (MeasureTheory.volume : MeasureTheory.Measure ℝ))
+
+/-- concrete な外部ポテンシャル寄与は密度同値で不変。 -/
+theorem concreteExternalEnergy3D_same_density
+    {v ρ₁ ρ₂ : Position3D → ℝ} (hρ : ρ₁ = ρ₂) :
+    concreteExternalEnergy3D v ρ₁ = concreteExternalEnergy3D v ρ₂ := by
+  rw [hρ]
+
+/-- concrete な外部ポテンシャル寄与はポテンシャル反転で符号が反転する。 -/
+theorem concreteExternalEnergy3D_neg_potential
+    (v ρ : Position3D → ℝ) :
+    concreteExternalEnergy3D (fun x => -v x) ρ = -concreteExternalEnergy3D v ρ := by
+  unfold concreteExternalEnergy3D
+  have hfun : (fun x => (-v x) * ρ x) = (fun x => -(v x * ρ x)) := by
+    ext x
+    ring
+  rw [hfun, integral_neg]
+
+/-- concrete な外部ポテンシャル contribution。 -/
+def concreteExternalContribution3D : ExternalPotentialContribution3D where
+  energy := concreteExternalEnergy3D
+  same_density := by
+    intro v ρ₁ ρ₂ hρ
+    exact concreteExternalEnergy3D_same_density hρ
+  neg_potential := by
+    intro v ρ
+    exact concreteExternalEnergy3D_neg_potential v ρ
 
 /-- 2 つの 3 次元多電子ハミルトニアンが運動項と相互作用項を共有すること。 -/
 structure SameCore3D (H₁ H₂ : ManyBodyHamiltonian3D N) : Prop where
@@ -475,12 +568,10 @@ def externalPotentialDifference
     (H₁ H₂ : ManyBodyHamiltonian3D N) : Position3D → ℝ :=
   fun x => H₁.vExt x - H₂.vExt x
 
-/-- 外部ポテンシャル差を評価するための標準的な contribution。 -/
+/-- 外部ポテンシャル差を評価するための concrete な contribution。 -/
 def standardExternalContribution :
-    ManyBodyGroundState3D.ExternalPotentialContribution3D where
-  energy v ρ := 0
-  same_density := by intro v ρ₁ ρ₂ hρ; simp
-  neg_potential := by intro v ρ; simp
+    ManyBodyGroundState3D.ExternalPotentialContribution3D :=
+  ManyBodyGroundState3D.concreteExternalContribution3D
 
 /-- 共通コアを持つ 2 つのハミルトニアン間の expectation shift をまとめる補助構造。 -/
 structure ExpectationShiftData
