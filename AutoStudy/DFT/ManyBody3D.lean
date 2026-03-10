@@ -119,6 +119,23 @@ structure ManyBodyState3D (N : ℕ) where
   particle_number : ℝ
   particle_number_eq : particle_number = N
 
+/-- 波動関数から密度と粒子数を回収する concrete な realization データ。 -/
+structure DensityRealization3D (N : ℕ) where
+  densityFromWavefunction : ManyBodyWavefunction3D N → Position3D → ℝ
+  particleNumberFromWavefunction : ManyBodyWavefunction3D N → ℝ
+  density_nonneg : ∀ Ψ x, 0 ≤ densityFromWavefunction Ψ x
+  particle_number_of_antisymmetric :
+    ∀ Ψ, IsAntisymmetric Ψ → particleNumberFromWavefunction Ψ = N
+
+/-- abstract state に concrete な density realization を接続したもの。 -/
+structure ConcreteManyBodyState3D (N : ℕ) where
+  realization : DensityRealization3D N
+  state : ManyBodyState3D N
+  normalized_witness : state.normalized
+  density_def : state.density = realization.densityFromWavefunction state.wavefunction
+  particle_number_def :
+    state.particle_number = realization.particleNumberFromWavefunction state.wavefunction
+
 namespace ManyBodyState3D
 
 variable {N : ℕ} (state : ManyBodyState3D N)
@@ -134,6 +151,34 @@ theorem wavefunction_antisymmetric :
   state.antisymmetric
 
 end ManyBodyState3D
+
+namespace ConcreteManyBodyState3D
+
+variable {N : ℕ} (cstate : ConcreteManyBodyState3D N)
+
+/-- concrete realization から state の密度が波動関数由来であることを再確認。 -/
+theorem density_from_wavefunction :
+    cstate.state.density = cstate.realization.densityFromWavefunction cstate.state.wavefunction :=
+  cstate.density_def
+
+/-- concrete realization から density の非負性が従う。 -/
+theorem density_nonneg_from_realization (x : Position3D) :
+    0 ≤ cstate.state.density x := by
+  rw [cstate.density_def]
+  exact cstate.realization.density_nonneg _ x
+
+/-- concrete realization から粒子数保存が波動関数レベルに下ろせる。 -/
+theorem particle_number_from_realization :
+    cstate.state.particle_number =
+      cstate.realization.particleNumberFromWavefunction cstate.state.wavefunction :=
+  cstate.particle_number_def
+
+/-- 反対称な concrete state の粒子数は N。 -/
+theorem particle_number_eq_nat :
+    cstate.realization.particleNumberFromWavefunction cstate.state.wavefunction = N := by
+  exact cstate.realization.particle_number_of_antisymmetric _ cstate.state.antisymmetric
+
+end ConcreteManyBodyState3D
 
 /-- 3 次元多電子状態による N-表現可能性。 -/
 def IsNRepresentable3D (N : ℕ) (ρ : Position3D → ℝ) : Prop :=

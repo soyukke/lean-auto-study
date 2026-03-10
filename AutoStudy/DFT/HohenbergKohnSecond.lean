@@ -72,4 +72,36 @@ theorem energyFunctional_add_ext
   rw [integral_add hint hint₂]
   ring
 
+/-- Levy-Lieb 型 constrained search の抽象化。
+    各密度に対して、その密度を実現する波動関数上のエネルギー下限を与える。 -/
+structure LevyLiebFunctional where
+  F_LL : (ℝ → ℝ) → ℝ
+  admissible : (ℝ → ℝ) → Prop
+  realize : ∀ {ρ}, admissible ρ → ∃ ψ : ℝ → ℝ, IsNormalized ψ ∧ electronDensity ψ = ρ
+  lower_bound : ∀ {ρ ψ}, admissible ρ → IsNormalized ψ → electronDensity ψ = ρ →
+    F_LL ρ ≤ expectationValue (fun _ _ => 0) ψ
+
+/-- abstract Levy-Lieb データから constrained-search 型の第二定理を得る。 -/
+theorem hohenberg_kohn_second_theorem_constrained
+    (LL : LevyLiebFunctional) (v_ext : ℝ → ℝ)
+    (ρ₀ : ℝ → ℝ) (E₀ : ℝ)
+    (_hρ₀ : LL.admissible ρ₀)
+    (hground : energyFunctional LL.F_LL v_ext ρ₀ = E₀)
+    (hvar : ∀ ρ, LL.admissible ρ → E₀ ≤ energyFunctional LL.F_LL v_ext ρ)
+    (ρ : ℝ → ℝ) (hρ : LL.admissible ρ) :
+    energyFunctional LL.F_LL v_ext ρ₀ ≤ energyFunctional LL.F_LL v_ext ρ := by
+  rw [hground]
+  exact hvar ρ hρ
+
+/-- 基底状態密度が admissible 集合上で最小値をとることの言い換え。 -/
+theorem constrained_energy_minimizer
+    (LL : LevyLiebFunctional) (v_ext : ℝ → ℝ)
+    (ρ₀ : ℝ → ℝ) (E₀ : ℝ)
+    (hρ₀ : LL.admissible ρ₀)
+    (hground : energyFunctional LL.F_LL v_ext ρ₀ = E₀)
+    (hvar : ∀ ρ, LL.admissible ρ → E₀ ≤ energyFunctional LL.F_LL v_ext ρ) :
+    ∀ ρ, LL.admissible ρ → energyFunctional LL.F_LL v_ext ρ₀ ≤ energyFunctional LL.F_LL v_ext ρ := by
+  intro ρ hρ
+  exact hohenberg_kohn_second_theorem_constrained LL v_ext ρ₀ E₀ hρ₀ hground hvar ρ hρ
+
 end DFT

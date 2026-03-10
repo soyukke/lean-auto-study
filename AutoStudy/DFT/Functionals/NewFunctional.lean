@@ -220,4 +220,26 @@ theorem acg_satisfies_six_constraints (c : ACGComponents) (ac : ACGConstraints c
    fun ρ₀ hρ₀ => acg_nlc_vanishes_uniform c ρ₀ hρ₀,
    acg_has_correct_asymptotic c⟩
 
+-- ============================================================
+-- 未充足条件の整理
+-- ============================================================
+
+/-- ACG がまだ自己相互作用補正を仮定していないことを明示する補助述語。 -/
+def ACGNeedsSelfInteractionAnalysis (c : ACGComponents) : Prop :=
+  ¬ ∃ E_H : (ℝ → ℝ) → ℝ, IsSelfInteractionFree (mkACGFunctional c).E_xc E_H
+
+/-- ACG がまだ交換スケーリング則を仮定していないことを明示する補助述語。 -/
+def ACGNeedsExchangeScalingAnalysis (c : ACGComponents) : Prop :=
+  ¬ SatisfiesExchangeScaling (mkACGFunctional c).E_x
+
+/-- ACG は 6/8 条件を満たし、残る主要未解決は SIC と交換スケーリング。 -/
+theorem acg_remaining_targets (c : ACGComponents) (ac : ACGConstraints c) :
+    IsExchangeNonPositive (mkACGFunctional c).E_x ∧
+    IsCorrelationNonPositive (mkACGFunctional c).E_c ∧
+    SatisfiesUniformLimit c.ε_x c.ε_x ∧
+    IsSizeConsistentSemiLocal (acgEnergy c) c.D ∧
+    (∀ ρ₀ > 0, c.nlc.E (fun _ => ρ₀) = 0) ∧
+    (∀ ρ, HasCorrectAsymptoticDecay (c.nlc.v ρ)) :=
+  acg_satisfies_six_constraints c ac
+
 end DFT
