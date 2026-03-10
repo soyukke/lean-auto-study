@@ -304,6 +304,19 @@ structure ConstrainedSearchModel3D {N : ℕ}
       gs.isNormalized state.wavefunction ∧
       DF.energy ρ = gs.expectation state.wavefunction
 
+/-- concrete N-表現可能性を使った constrained-search model。 -/
+structure ConcreteConstrainedSearchModel3D {N : ℕ}
+    (gs : ManyBodyGroundState3D N) (DF : DensityFunctional3D N) where
+  ground_concrete : IsConcreteNRepresentable3D N gs.state.density
+  ground_admissible : DF.admissible gs.state.density
+  ground_energy_eq : DF.energy gs.state.density = gs.energy
+  admissible_concrete : ∀ {ρ}, DF.admissible ρ → IsConcreteNRepresentable3D N ρ
+  realize : ∀ {ρ}, DF.admissible ρ → IsConcreteNRepresentable3D N ρ →
+    ∃ cstate : ConcreteManyBodyState3D N,
+      cstate.state.density = ρ ∧
+      gs.isNormalized cstate.state.wavefunction ∧
+      DF.energy ρ = gs.expectation cstate.state.wavefunction
+
 namespace ManyBodyGroundState3D
 
 variable {N : ℕ} (gs : ManyBodyGroundState3D N)
@@ -461,6 +474,19 @@ theorem hohenberg_kohn_second_theorem_3d
     DF.MinimizesOnAdmissible gs.state.density :=
   gs.ground_state_density_minimizes DF model
 
+/-- concrete constrained-search model から abstract model を得る。 -/
+def concreteToAbstractConstrainedSearch
+    (DF : DensityFunctional3D N)
+    (model : ConcreteConstrainedSearchModel3D gs DF) :
+    ConstrainedSearchModel3D gs DF where
+  ground_admissible := model.ground_admissible
+  ground_energy_eq := model.ground_energy_eq
+  realize := by
+    intro ρ hρ
+    have hconcrete : IsConcreteNRepresentable3D N ρ := model.admissible_concrete hρ
+    rcases model.realize hρ hconcrete with ⟨cstate, hcstate, hnorm, henergy⟩
+    exact ⟨cstate.state, hcstate, hnorm, henergy⟩
+
 /-- 多電子 3 次元版 Hohenberg-Kohn 第一定理の抽象形。 -/
 theorem hohenberg_kohn_first_theorem_3d
     (gs₁ gs₂ : ManyBodyGroundState3D N)
@@ -514,6 +540,35 @@ theorem hohenberg_kohn_first_theorem_3d_explicit
     rw [hshift, hneg]
     ring
   exact hohenberg_kohn_first_theorem_3d gs₁ gs₂ hρ hvar1 hvar2 δV hpot1 hpot2
+
+/-- 1 電子系の条件。 -/
+def IsOneElectronState (state : ManyBodyState3D 1) : Prop :=
+  state.particle_number = 1
+
+/-- 反対称な 1 電子系では粒子数条件は自動的に満たされる。 -/
+theorem one_electron_particle_number (state : ManyBodyState3D 1) :
+    IsOneElectronState state := by
+  unfold IsOneElectronState
+  simpa using state.particle_number_eq
+
+/-- 3 次元 Hartree 型エネルギーの抽象版。 -/
+def hartreeEnergy3D (W : Position3D → Position3D → ℝ) (ρ : Position3D → ℝ) : ℝ :=
+  densityIntegral3D (fun x => ρ x * densityIntegral3D (fun y => W x y * ρ y))
+
+/-- 非負核に対して Hartree 型エネルギーは非負。 -/
+theorem hartreeEnergy3D_nonneg
+    (W : Position3D → Position3D → ℝ)
+    (hW : ∀ x y, 0 ≤ W x y)
+    (ρ : Position3D → ℝ)
+    (hρ : ∀ x, 0 ≤ ρ x) :
+    0 ≤ hartreeEnergy3D W ρ := by
+  unfold hartreeEnergy3D densityIntegral3D
+  apply integral_nonneg
+  intro x
+  apply mul_nonneg (hρ x)
+  apply integral_nonneg
+  intro y
+  exact mul_nonneg (hW x y) (hρ y)
 
 end ManyBodyGroundState3D
 
@@ -586,6 +641,32 @@ structure ExpectationShiftData
       gs₂.expectation Ψ =
         E + standardExternalContribution.energy
           (externalPotentialDifference gs₂.hamiltonian gs₁.hamiltonian) ρ
+
+/-- expectation shift が concrete external energy で表されることを明示する版。 -/
+structure ConcreteExpectationShiftData
+    (gs₁ gs₂ : ManyBodyGroundState3D N) : Prop where
+  shift_left :
+    ∀ Ψ ρ E,
+      gs₁.expectation Ψ =
+        E + ManyBodyGroundState3D.concreteExternalEnergy3D
+          (externalPotentialDifference gs₁.hamiltonian gs₂.hamiltonian) ρ
+  shift_right :
+    ∀ Ψ ρ E,
+      gs₂.expectation Ψ =
+        E + ManyBodyGroundState3D.concreteExternalEnergy3D
+          (externalPotentialDifference gs₂.hamiltonian gs₁.hamiltonian) ρ
+
+/-- concrete expectation shift データから abstract expectation shift data を得る。 -/
+def concreteToAbstractExpectationShift
+    (gs₁ gs₂ : ManyBodyGroundState3D N)
+    (hshift : ConcreteExpectationShiftData gs₁ gs₂) :
+    ExpectationShiftData gs₁ gs₂ where
+  shift_left := by
+    intro Ψ ρ E
+    simpa [standardExternalContribution] using hshift.shift_left Ψ ρ E
+  shift_right := by
+    intro Ψ ρ E
+    simpa [standardExternalContribution] using hshift.shift_right Ψ ρ E
 
 /-- Expectation shift データから explicit HK data を作る。 -/
 def toExplicitHKData
