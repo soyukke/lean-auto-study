@@ -9,6 +9,7 @@
 -/
 import AutoStudy.DFT.Basic
 import AutoStudy.DFT.VariationalPrinciple
+import AutoStudy.DFT.ManyBody3D
 
 open MeasureTheory DFT
 
@@ -103,5 +104,19 @@ theorem constrained_energy_minimizer
     ∀ ρ, LL.admissible ρ → energyFunctional LL.F_LL v_ext ρ₀ ≤ energyFunctional LL.F_LL v_ext ρ := by
   intro ρ hρ
   exact hohenberg_kohn_second_theorem_constrained LL v_ext ρ₀ E₀ hρ₀ hground hvar ρ hρ
+
+/-- 3D 多電子の density functional を 1D 側の Levy-Lieb 風抽象へ落とすための最小インターフェース。 -/
+structure LevyLiebBridge3D (N : ℕ) where
+  DF3D : DensityFunctional3D N
+  to1D : (Fin 3 → ℝ) → ℝ
+  admissible_respects_projection : ∀ ρ, DF3D.admissible ρ → IsVRepresentable (fun x => ρ (fun _ => to1D (fun _ => x)))
+
+/-- ManyBody3D 側の minimization principle は Levy-Lieb 風の constrained-search の見方と整合する。 -/
+theorem manyBody_second_theorem_bridge
+    {N : ℕ} (gs : ManyBodyGroundState3D N)
+    (DF : DensityFunctional3D N)
+    (model : ConstrainedSearchModel3D gs DF) :
+    DF.MinimizesOnAdmissible gs.state.density :=
+  gs.hohenberg_kohn_second_theorem_3d DF model
 
 end DFT

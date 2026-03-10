@@ -570,6 +570,42 @@ theorem hartreeEnergy3D_nonneg
   intro y
   exact mul_nonneg (hW x y) (hρ y)
 
+/-- expectation を Hartree 項と外部ポテンシャル項へ分解するための concrete データ。 -/
+structure HartreeExternalDecomposition3D (gs : ManyBodyGroundState3D N) where
+  W : Position3D → Position3D → ℝ
+  E_remainder : (Position3D → ℝ) → ℝ
+  expectation_eq : ∀ Ψ ρ,
+    gs.expectation Ψ =
+      E_remainder ρ +
+        hartreeEnergy3D W ρ +
+        concreteExternalEnergy3D gs.hamiltonian.vExt ρ
+
+/-- Hartree + external decomposition から得られる密度汎関数。 -/
+def HartreeExternalDecomposition3D.toDensityFunctional
+    (decomp : HartreeExternalDecomposition3D gs) : DensityFunctional3D N where
+  energy := fun ρ =>
+    decomp.E_remainder ρ +
+      hartreeEnergy3D decomp.W ρ +
+      concreteExternalEnergy3D gs.hamiltonian.vExt ρ
+  admissible := DensityAdmissible (N := N)
+
+/-- decomposition は expectation を associated density functional の値に一致させる。 -/
+theorem expectation_eq_decomposed_energy
+    (decomp : HartreeExternalDecomposition3D gs)
+    (Ψ : ManyBodyWavefunction3D N) (ρ : Position3D → ℝ) :
+    gs.expectation Ψ =
+      (decomp.toDensityFunctional (gs := gs)).energy ρ := by
+  rw [HartreeExternalDecomposition3D.toDensityFunctional]
+  exact decomp.expectation_eq Ψ ρ
+
+/-- 基底状態エネルギーは decomposition された密度汎関数でも表現できる。 -/
+theorem ground_energy_eq_decomposed_energy
+    (decomp : HartreeExternalDecomposition3D gs) :
+    (decomp.toDensityFunctional (gs := gs)).energy gs.state.density = gs.energy := by
+  have h := expectation_eq_decomposed_energy (gs := gs) decomp gs.state.wavefunction gs.state.density
+  rw [gs.expectation_eq] at h
+  exact h.symm
+
 end ManyBodyGroundState3D
 
 namespace ManyBodyHamiltonian3D
