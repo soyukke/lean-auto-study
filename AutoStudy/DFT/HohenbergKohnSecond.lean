@@ -15,18 +15,37 @@ open MeasureTheory DFT
 
 namespace DFT
 
-/-- v-表現可能密度: ある正規化波動関数の電子密度として実現可能 -/
-def IsVRepresentable (ρ : ℝ → ℝ) : Prop :=
+/-- N-表現可能密度 (1D): ある正規化波動関数の電子密度として実現可能。
+    注意: これは v-表現可能性より弱い条件であり、
+    波動関数がある外部ポテンシャルの基底状態であることは要求しない。 -/
+def IsNRepresentable1D (ρ : ℝ → ℝ) : Prop :=
   ∃ ψ : ℝ → ℝ, IsNormalized ψ ∧ electronDensity ψ = ρ
+
+/-- v-表現可能密度: ある外部ポテンシャルの基底状態密度として実現可能。
+    これは N-表現可能性より強い条件であり、
+    密度が具体的なハミルトニアンの基底状態から来ることを要求する。 -/
+def IsVRepresentable (ρ : ℝ → ℝ) : Prop :=
+  ∃ gs : GroundState, electronDensity gs.ψ₀ = ρ
 
 /-- エネルギー汎関数 E[ρ] = F[ρ] + ∫ v_ext(x) · ρ(x) dx
     F: 普遍汎関数 (運動エネルギー + 電子間相互作用) -/
 noncomputable def energyFunctional (F : (ℝ → ℝ) → ℝ) (v_ext : ℝ → ℝ) (ρ : ℝ → ℝ) : ℝ :=
   F ρ + ∫ x, v_ext x * ρ x
 
+/-- v-表現可能密度は N-表現可能 -/
+theorem isVRepresentable_isNRepresentable {ρ : ℝ → ℝ}
+    (h : IsVRepresentable ρ) : IsNRepresentable1D ρ := by
+  rcases h with ⟨gs, hρ⟩
+  exact ⟨gs.ψ₀, gs.normalized, hρ⟩
+
 /-- 基底状態密度は v-表現可能 -/
 theorem groundState_density_vrepresentable (gs : GroundState) :
     IsVRepresentable (electronDensity gs.ψ₀) :=
+  ⟨gs, rfl⟩
+
+/-- 基底状態密度は N-表現可能 -/
+theorem groundState_density_nrepresentable (gs : GroundState) :
+    IsNRepresentable1D (electronDensity gs.ψ₀) :=
   ⟨gs.ψ₀, gs.normalized, rfl⟩
 
 /-- Hohenberg-Kohn 第二定理:
@@ -74,13 +93,24 @@ theorem energyFunctional_add_ext
   ring
 
 /-- Levy-Lieb 型 constrained search の抽象化。
-    各密度に対して、その密度を実現する波動関数上のエネルギー下限を与える。 -/
+    各密度に対して、その密度を実現する波動関数上の内部エネルギー下限を与える。
+
+    F_LL[ρ] = min_{ψ→ρ} ⟨ψ|H_internal|ψ⟩
+    ここで H_internal は運動エネルギー + 電子間相互作用 (外部ポテンシャルを含まない)。 -/
 structure LevyLiebFunctional where
+  /-- 内部ハミルトニアン (運動エネルギー + 電子間相互作用) -/
+  H_internal : (ℝ → ℝ) → (ℝ → ℝ)
+  /-- Levy-Lieb 汎関数 F_LL[ρ] -/
   F_LL : (ℝ → ℝ) → ℝ
+  /-- 許容密度の条件 -/
   admissible : (ℝ → ℝ) → Prop
+  /-- 許容密度は正規化波動関数で実現可能 -/
   realize : ∀ {ρ}, admissible ρ → ∃ ψ : ℝ → ℝ, IsNormalized ψ ∧ electronDensity ψ = ρ
+  /-- Constrained search 下界:
+      F_LL[ρ] は ρ を実現する任意の正規化波動関数に対する
+      内部ハミルトニアンの期待値の下界。 -/
   lower_bound : ∀ {ρ ψ}, admissible ρ → IsNormalized ψ → electronDensity ψ = ρ →
-    F_LL ρ ≤ expectationValue (fun _ _ => 0) ψ
+    F_LL ρ ≤ expectationValue H_internal ψ
 
 /-- abstract Levy-Lieb データから constrained-search 型の第二定理を得る。 -/
 theorem hohenberg_kohn_second_theorem_constrained
@@ -109,7 +139,8 @@ theorem constrained_energy_minimizer
 structure LevyLiebBridge3D (N : ℕ) where
   DF3D : DensityFunctional3D N
   to1D : (Fin 3 → ℝ) → ℝ
-  admissible_respects_projection : ∀ ρ, DF3D.admissible ρ → IsVRepresentable (fun x => ρ (fun _ => to1D (fun _ => x)))
+  admissible_respects_projection : ∀ ρ, DF3D.admissible ρ →
+    IsNRepresentable1D (fun x => ρ (fun _ => to1D (fun _ => x)))
 
 /-- ManyBody3D 側の minimization principle は Levy-Lieb 風の constrained-search の見方と整合する。 -/
 theorem manyBody_second_theorem_bridge

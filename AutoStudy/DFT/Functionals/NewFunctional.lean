@@ -28,6 +28,7 @@
     合計                    | 5/8 | 5/8 | 6/8
 -/
 import AutoStudy.DFT.GGA
+import AutoStudy.DFT.FunctionalDerivative
 import AutoStudy.DFT.ExactConstraints.Asymptotic
 import AutoStudy.DFT.ExactConstraints.SizeConsistency
 
@@ -42,7 +43,8 @@ namespace DFT
 -- ============================================================
 
 /-- 非局所補正項: 漸近挙動を改善するための補正エネルギー。
-    GGA に加えることで正しい -1/r 減衰を実現する。 -/
+    GGA に加えることで正しい -1/r 減衰を実現する。
+    v = δE/δρ の変分関係を要求し、E と v の整合性を保証する。 -/
 structure NonLocalCorrection where
   /-- 補正エネルギー E_nlc[ρ] -/
   E : (ℝ → ℝ) → ℝ
@@ -52,6 +54,8 @@ structure NonLocalCorrection where
   nonpositive : ∀ ρ, (∀ x, 0 ≤ ρ x) → E ρ ≤ 0
   /-- 均一密度で消失: 定数密度に対して補正は不要 -/
   uniform_vanish : ∀ ρ₀ : ℝ, 0 < ρ₀ → E (fun _ => ρ₀) = 0
+  /-- 変分関係: v = δE/δρ (Gateaux 微分) -/
+  variational : ∀ ρ, HasFunctionalDerivative E ρ (v ρ)
   /-- ポテンシャルの漸近挙動: r * v(r) → -1 (r → ∞) -/
   asymptotic : ∀ ρ, HasCorrectAsymptoticDecay (v ρ)
 

@@ -363,20 +363,30 @@ structure SameCore3D (H₁ H₂ : ManyBodyHamiltonian3D N) : Prop where
   kinetic : H₁.kinetic = H₂.kinetic
   interaction : H₁.interaction = H₂.interaction
 
-/-- 3 次元多電子版 HK の explicit な仮定パッケージ。 -/
+/-- 3 次元多電子版 HK の explicit な仮定パッケージ。
+    旧版と異なり、expectation shift は具体的な基底状態の波動関数と
+    その密度に対してのみ主張する（∀ Ψ ρ E の不自然な全称を除去）。 -/
 structure ExplicitHKData3D (gs₁ gs₂ : ManyBodyGroundState3D N) where
   sameCore : SameCore3D gs₁.hamiltonian gs₂.hamiltonian
   external : ExternalPotentialContribution3D
+  /-- gs₂ の波動関数は gs₁ の正規化ドメインに属する -/
+  norm_cross_12 : gs₁.isNormalized gs₂.state.wavefunction
+  /-- gs₁ の波動関数は gs₂ の正規化ドメインに属する -/
+  norm_cross_21 : gs₂.isNormalized gs₁.state.wavefunction
+  /-- gs₂ の波動関数の gs₁ ハミルトニアン下の期待値は
+      gs₂ エネルギー + 外部ポテンシャル差の密度積分 -/
   expectation_shift_left :
-    ∀ Ψ ρ E,
-      gs₁.expectation Ψ =
-        E + external.energy
-          (fun x => gs₁.hamiltonian.vExt x - gs₂.hamiltonian.vExt x) ρ
+    gs₁.expectation gs₂.state.wavefunction =
+      gs₂.energy + external.energy
+        (fun x => gs₁.hamiltonian.vExt x - gs₂.hamiltonian.vExt x)
+        gs₂.state.density
+  /-- gs₁ の波動関数の gs₂ ハミルトニアン下の期待値は
+      gs₁ エネルギー + 外部ポテンシャル差の密度積分 -/
   expectation_shift_right :
-    ∀ Ψ ρ E,
-      gs₂.expectation Ψ =
-        E + external.energy
-          (fun x => gs₂.hamiltonian.vExt x - gs₁.hamiltonian.vExt x) ρ
+    gs₂.expectation gs₁.state.wavefunction =
+      gs₁.energy + external.energy
+        (fun x => gs₂.hamiltonian.vExt x - gs₁.hamiltonian.vExt x)
+        gs₁.state.density
 
 /-- 基底状態密度は N-表現可能。 -/
 theorem density_nRepresentable :
@@ -515,31 +525,18 @@ theorem hohenberg_kohn_first_theorem_3d_explicit
     data.external.energy
       (fun x => gs₁.hamiltonian.vExt x - gs₂.hamiltonian.vExt x)
       gs₂.state.density
-  have hpot1 : gs₁.expectation gs₂.state.wavefunction = gs₂.energy + δV := by
-    simpa [δV] using
-      data.expectation_shift_left gs₂.state.wavefunction gs₂.state.density gs₂.energy
-  have hδeq :
-      data.external.energy
-        (fun x => gs₁.hamiltonian.vExt x - gs₂.hamiltonian.vExt x)
-        gs₁.state.density = δV := by
-    dsimp [δV]
-    exact data.external.same_density hρ
   have hneg :
       data.external.energy
         (fun x => gs₂.hamiltonian.vExt x - gs₁.hamiltonian.vExt x)
         gs₁.state.density = -δV := by
     have hfun : (fun x => gs₂.hamiltonian.vExt x - gs₁.hamiltonian.vExt x) =
         (fun x => -((gs₁.hamiltonian.vExt x - gs₂.hamiltonian.vExt x))) := by
-      funext x
-      ring
-    rw [hfun, data.external.neg_potential]
-    rw [hδeq]
+      funext x; ring
+    rw [hfun, data.external.neg_potential, data.external.same_density hρ]
   have hpot2 : gs₂.expectation gs₁.state.wavefunction = gs₁.energy - δV := by
-    have hshift :=
-      data.expectation_shift_right gs₁.state.wavefunction gs₁.state.density gs₁.energy
-    rw [hshift, hneg]
-    ring
-  exact hohenberg_kohn_first_theorem_3d gs₁ gs₂ hρ hvar1 hvar2 δV hpot1 hpot2
+    rw [data.expectation_shift_right, hneg]; ring
+  exact hohenberg_kohn_first_theorem_3d gs₁ gs₂ hρ hvar1 hvar2 δV
+    data.expectation_shift_left hpot2
 
 /-- 1 電子系の条件。 -/
 def IsOneElectronState (state : ManyBodyState3D 1) : Prop :=
@@ -570,15 +567,20 @@ theorem hartreeEnergy3D_nonneg
   intro y
   exact mul_nonneg (hW x y) (hρ y)
 
-/-- expectation を Hartree 項と外部ポテンシャル項へ分解するための concrete データ。 -/
+/-- expectation を Hartree 項と外部ポテンシャル項へ分解するための concrete データ。
+    旧版と異なり、Ψ と ρ は ManyBodyState3D を通じて結びつけられる。
+    これにより任意の密度に対して同じ期待値を表せてしまう問題を解消。 -/
 structure HartreeExternalDecomposition3D (gs : ManyBodyGroundState3D N) where
   W : Position3D → Position3D → ℝ
   E_remainder : (Position3D → ℝ) → ℝ
-  expectation_eq : ∀ Ψ ρ,
-    gs.expectation Ψ =
-      E_remainder ρ +
-        hartreeEnergy3D W ρ +
-        concreteExternalEnergy3D gs.hamiltonian.vExt ρ
+  /-- 正規化された多体状態に対し、期待値はその状態自身の密度を用いた
+      Hartree + 外部ポテンシャル + 残差に分解される -/
+  expectation_eq : ∀ (state : ManyBodyState3D N),
+    gs.isNormalized state.wavefunction →
+    gs.expectation state.wavefunction =
+      E_remainder state.density +
+        hartreeEnergy3D W state.density +
+        concreteExternalEnergy3D gs.hamiltonian.vExt state.density
 
 /-- Hartree + external decomposition から得られる密度汎関数。 -/
 def HartreeExternalDecomposition3D.toDensityFunctional
@@ -592,17 +594,18 @@ def HartreeExternalDecomposition3D.toDensityFunctional
 /-- decomposition は expectation を associated density functional の値に一致させる。 -/
 theorem expectation_eq_decomposed_energy
     (decomp : HartreeExternalDecomposition3D gs)
-    (Ψ : ManyBodyWavefunction3D N) (ρ : Position3D → ℝ) :
-    gs.expectation Ψ =
-      (decomp.toDensityFunctional (gs := gs)).energy ρ := by
+    (state : ManyBodyState3D N) (hnorm : gs.isNormalized state.wavefunction) :
+    gs.expectation state.wavefunction =
+      (decomp.toDensityFunctional (gs := gs)).energy state.density := by
   rw [HartreeExternalDecomposition3D.toDensityFunctional]
-  exact decomp.expectation_eq Ψ ρ
+  exact decomp.expectation_eq state hnorm
 
 /-- 基底状態エネルギーは decomposition された密度汎関数でも表現できる。 -/
 theorem ground_energy_eq_decomposed_energy
     (decomp : HartreeExternalDecomposition3D gs) :
     (decomp.toDensityFunctional (gs := gs)).energy gs.state.density = gs.energy := by
-  have h := expectation_eq_decomposed_energy (gs := gs) decomp gs.state.wavefunction gs.state.density
+  have h := expectation_eq_decomposed_energy (gs := gs) decomp
+    gs.state gs.state_normalized
   rw [gs.expectation_eq] at h
   exact h.symm
 
@@ -664,45 +667,50 @@ def standardExternalContribution :
     ManyBodyGroundState3D.ExternalPotentialContribution3D :=
   ManyBodyGroundState3D.concreteExternalContribution3D
 
-/-- 共通コアを持つ 2 つのハミルトニアン間の expectation shift をまとめる補助構造。 -/
+/-- 共通コアを持つ 2 つのハミルトニアン間の expectation shift をまとめる補助構造。
+    旧版の ∀ Ψ ρ E を除去し、具体的な基底状態に対してのみ主張する。 -/
 structure ExpectationShiftData
     (gs₁ gs₂ : ManyBodyGroundState3D N) : Prop where
+  norm_cross_12 : gs₁.isNormalized gs₂.state.wavefunction
+  norm_cross_21 : gs₂.isNormalized gs₁.state.wavefunction
   shift_left :
-    ∀ Ψ ρ E,
-      gs₁.expectation Ψ =
-        E + standardExternalContribution.energy
-          (externalPotentialDifference gs₁.hamiltonian gs₂.hamiltonian) ρ
+    gs₁.expectation gs₂.state.wavefunction =
+      gs₂.energy + standardExternalContribution.energy
+        (externalPotentialDifference gs₁.hamiltonian gs₂.hamiltonian)
+        gs₂.state.density
   shift_right :
-    ∀ Ψ ρ E,
-      gs₂.expectation Ψ =
-        E + standardExternalContribution.energy
-          (externalPotentialDifference gs₂.hamiltonian gs₁.hamiltonian) ρ
+    gs₂.expectation gs₁.state.wavefunction =
+      gs₁.energy + standardExternalContribution.energy
+        (externalPotentialDifference gs₂.hamiltonian gs₁.hamiltonian)
+        gs₁.state.density
 
 /-- expectation shift が concrete external energy で表されることを明示する版。 -/
 structure ConcreteExpectationShiftData
     (gs₁ gs₂ : ManyBodyGroundState3D N) : Prop where
+  norm_cross_12 : gs₁.isNormalized gs₂.state.wavefunction
+  norm_cross_21 : gs₂.isNormalized gs₁.state.wavefunction
   shift_left :
-    ∀ Ψ ρ E,
-      gs₁.expectation Ψ =
-        E + ManyBodyGroundState3D.concreteExternalEnergy3D
-          (externalPotentialDifference gs₁.hamiltonian gs₂.hamiltonian) ρ
+    gs₁.expectation gs₂.state.wavefunction =
+      gs₂.energy + ManyBodyGroundState3D.concreteExternalEnergy3D
+        (externalPotentialDifference gs₁.hamiltonian gs₂.hamiltonian)
+        gs₂.state.density
   shift_right :
-    ∀ Ψ ρ E,
-      gs₂.expectation Ψ =
-        E + ManyBodyGroundState3D.concreteExternalEnergy3D
-          (externalPotentialDifference gs₂.hamiltonian gs₁.hamiltonian) ρ
+    gs₂.expectation gs₁.state.wavefunction =
+      gs₁.energy + ManyBodyGroundState3D.concreteExternalEnergy3D
+        (externalPotentialDifference gs₂.hamiltonian gs₁.hamiltonian)
+        gs₁.state.density
 
 /-- concrete expectation shift データから abstract expectation shift data を得る。 -/
 def concreteToAbstractExpectationShift
     (gs₁ gs₂ : ManyBodyGroundState3D N)
     (hshift : ConcreteExpectationShiftData gs₁ gs₂) :
     ExpectationShiftData gs₁ gs₂ where
+  norm_cross_12 := hshift.norm_cross_12
+  norm_cross_21 := hshift.norm_cross_21
   shift_left := by
-    intro Ψ ρ E
-    simpa [standardExternalContribution] using hshift.shift_left Ψ ρ E
+    simpa [standardExternalContribution] using hshift.shift_left
   shift_right := by
-    intro Ψ ρ E
-    simpa [standardExternalContribution] using hshift.shift_right Ψ ρ E
+    simpa [standardExternalContribution] using hshift.shift_right
 
 /-- Expectation shift データから explicit HK data を作る。 -/
 def toExplicitHKData
@@ -712,12 +720,14 @@ def toExplicitHKData
     ManyBodyGroundState3D.ExplicitHKData3D gs₁ gs₂ where
   sameCore := hcore
   external := standardExternalContribution
+  norm_cross_12 := hshift.norm_cross_12
+  norm_cross_21 := hshift.norm_cross_21
   expectation_shift_left := by
-    intro Ψ ρ E
-    simpa [standardExternalContribution, externalPotentialDifference] using hshift.shift_left Ψ ρ E
+    simpa [standardExternalContribution, externalPotentialDifference]
+      using hshift.shift_left
   expectation_shift_right := by
-    intro Ψ ρ E
-    simpa [standardExternalContribution, externalPotentialDifference] using hshift.shift_right Ψ ρ E
+    simpa [standardExternalContribution, externalPotentialDifference]
+      using hshift.shift_right
 
 end ManyBodyHamiltonian3D
 

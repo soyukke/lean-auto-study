@@ -24,7 +24,8 @@ open MeasureTheory DFT Finset
 
 namespace DFT
 
-/-- Kohn-Sham 系: N個の1粒子軌道からなる系 -/
+/-- Kohn-Sham 系: N個の1粒子軌道からなる系
+    正規化条件に加えて軌道の直交性を要求する。 -/
 structure KohnShamSystem (N : ℕ) where
   /-- Kohn-Sham 軌道 φᵢ -/
   orbitals : Fin N → (ℝ → ℝ)
@@ -34,6 +35,8 @@ structure KohnShamSystem (N : ℕ) where
   v_eff : ℝ → ℝ
   /-- 各軌道は正規化されている: ⟨φᵢ|φᵢ⟩ = 1 -/
   normalized : ∀ i, IsNormalized (orbitals i)
+  /-- 軌道の直交性: i ≠ j ならば ⟨φᵢ|φⱼ⟩ = 0 -/
+  orthogonal : ∀ i j, i ≠ j → innerProduct (orbitals i) (orbitals j) = 0
 
 namespace KohnShamSystem
 
@@ -42,6 +45,13 @@ variable {N : ℕ} (ks : KohnShamSystem N)
 /-- Kohn-Sham 密度: ρ(x) = Σᵢ |φᵢ(x)|² = Σᵢ φᵢ(x)² -/
 noncomputable def density : ℝ → ℝ :=
   fun x => ∑ i : Fin N, electronDensity (ks.orbitals i) x
+
+/-- Kohn-Sham 軌道は正規直交系をなす -/
+theorem orthonormal (i j : Fin N) :
+    innerProduct (ks.orbitals i) (ks.orbitals j) = if i = j then 1 else 0 := by
+  by_cases h : i = j
+  · subst h; exact if_pos rfl ▸ ks.normalized i
+  · exact if_neg h ▸ ks.orthogonal i j h
 
 /-- Kohn-Sham 密度は非負 -/
 theorem density_nonneg (x : ℝ) : 0 ≤ ks.density x :=

@@ -91,10 +91,23 @@ theorem integral_kernel_translate (K : ℝ → ℝ) (hK_symm : ∀ r, K r = K (-
   rw [h1]
   convert integral_sub_right_eq_self (μ := volume) K x
 
-/-- Lebesgue 測度のもとで定数関数の積分は 0（volume ℝ = ∞ のため） -/
+/-- Lebesgue 測度のもとで定数関数の積分は 0（volume ℝ = ∞ のため）。
+
+    注意: この結果は Lean/Mathlib の Lebesgue 測度の取り扱いに依存する。
+    volume ℝ = ∞ であるため、定数関数 c ≠ 0 は可積分でなく、
+    Bochner 積分の規約により ∫ c = 0 となる。
+    物理的には一様密度のエネルギーは有限体積系（周期境界条件など）で
+    定義されるべきであり、この結果の直接的な物理的解釈は避けるべきである。 -/
 private theorem volume_real_univ_eq_zero : (volume : Measure ℝ).real Set.univ = 0 := by
   simp [Measure.real]
 
+/-- 対称カーネルに対する一様密度のエネルギーが 0 になること。
+
+    注意: この定理は Lean 上の Lebesgue 測度（ℝ 上の volume = ∞）の
+    人工的な帰結に依存している。定数関数は無限体積空間で非可積分であり、
+    Bochner 積分の規約により ∫ const = 0 として扱われる。
+    物理的に意味のある一様密度極限は、有限体積（周期境界条件など）で
+    別途定式化する必要がある。 -/
 theorem kernelEnergy_const (K : ℝ → ℝ) (hK_symm : ∀ r, K r = K (-r)) (ρ₀ : ℝ) :
     kernelEnergy K (fun _ => ρ₀) = 0 := by
   unfold kernelEnergy kernelConv
