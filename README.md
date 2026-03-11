@@ -1,53 +1,54 @@
 # AutoStudy
 
-Lean 4 + Mathlib による数学・物理の形式化プロジェクト。
+AutoStudy is a Lean 4 + Mathlib project for formalizing mathematics and physics.
 
-## 内容
+## Contents
 
-### 数学
-- **√2 の無理数性** (`Sqrt2Irrational.lean`) — Mathlib の `irrational_sqrt_two` を利用した証明と、無限降下法による直接証明
+### Mathematics
+- **Irrationality of `sqrt(2)`** (`AutoStudy/Sqrt2Irrational.lean`) - a proof using Mathlib's `irrational_sqrt_two` and a direct proof by infinite descent
 
-### 古典力学
-- **1次元エネルギー保存則** (`EnergyConservation.lean`) — ニュートンの運動方程式のもとで全エネルギー dE/dt = 0 を証明
+### Classical Mechanics
+- **One-dimensional energy conservation** (`AutoStudy/EnergyConservation.lean`) - a proof that total energy satisfies `dE/dt = 0` under Newton's equation of motion
 
-### 密度汎関数理論 (DFT)
-第一原理計算の数学的基礎を Lean 4 で形式化。
+### Density Functional Theory (DFT)
+This repository includes a growing Lean formalization of the mathematical foundations of density functional theory.
 
-- **基礎定義** (`DFT/Basic.lean`) — 内積、期待値、固有状態、電子密度
-- **Hohenberg-Kohn 第一定理** (`DFT/HohenbergKohn.lean`) — 異なる外部ポテンシャルが同じ基底状態密度を与えないことの証明
-- **変分原理** (`DFT/VariationalPrinciple.lean`) — 基底状態が期待値を最小化、非縮退基底状態の厳密不等式、基底状態エネルギーの一意性
-- **Hohenberg-Kohn 第二定理** (`DFT/HohenbergKohnSecond.lean`) — エネルギー汎関数の最小化、v-表現可能密度
-- **Kohn-Sham 方程式** (`DFT/KohnSham.lean`) — KS系の定式化、密度の非負性と粒子数保存、有効ポテンシャル分解、自己無撞着条件
-- **自己随伴演算子** (`DFT/SelfAdjoint.lean`) — 自己随伴性の定義、異なる固有値の固有状態の直交性、行列要素の性質
-- **Hellmann-Feynman 定理** (`DFT/HellmannFeynman.lean`) — 摂動ハミルトニアンの期待値によるエネルギー変化、固有値摂動関係
-- **交換相関汎関数** (`DFT/ExchangeCorrelation.lean`) — XCFunctional構造体、局所・半局所汎関数の定義
-- **座標スケーリング** (`DFT/Scaling.lean`) — 密度のスケーリング変換、合成則、スケーリング条件
-- **汎関数微分** (`DFT/FunctionalDerivative.lean`) — Gateaux微分としての定義、線形汎関数の微分、加法性・スカラー倍
-- **厳密条件** (`DFT/ExactConstraints.lean`) — 非正性、Lieb-Oxford限界、自己相互作用補正、均一密度極限
-- **和則** (`DFT/ExactConstraints/SumRules.lean`) — 交換・相関ホールの和則、ホールの非正性、交換相関ホールの和則定理
-- **漸近的性質** (`DFT/ExactConstraints/Asymptotic.lean`) — 長距離挙動 v_xc→-1/r、高密度・低密度極限、局所ポテンシャルの漸近的限界（LDA/GGAが正しい漸近挙動を持てない証明）、漸近補正付きポテンシャル
-- **サイズ整合性** (`DFT/ExactConstraints/SizeConsistency.lean`) — サイズ整合性、局所汎関数のサイズ整合性証明、並進不変性、凸性、正の同次性
-- **LDA** (`DFT/LDA.lean`) — 局所密度近似の定義、交換・相関の非正性証明、Lieb-Oxford限界との整合性
-- **GGA** (`DFT/GGA.lean`) — 一般化勾配近似の定義、LDA帰着、enhancement factor の有界性
-- **条件充足比較表** (`DFT/Functionals/Comparison.lean`) — LDA/GGAの厳密条件充足の型レベル表現、サイズ整合性証明、改善ターゲットの明示
-- **新汎関数 ACG** (`DFT/Functionals/NewFunctional.lean`) — GGA + 非局所補正による漸近補正汎関数、6/8 厳密条件充足の証明
-- **モデルポテンシャル** (`DFT/ModelPotential.lean`) — エネルギー汎関数を経由しないポテンシャル直接定義の枠組み
-- **LB94** (`DFT/Functionals/LB94.lean`) — van Leeuwen-Baerends 漸近補正ポテンシャル、LDA 帰着・非正性・漸近減衰の証明
-- **LB94 漸近挙動の完全証明** (`DFT/Functionals/LB94Asymptotic.lean`) — 指数減衰密度に対する LB94 の -1/r 漸近減衰の完全証明（arsinh bounds + squeeze theorem + 因子分解）
-- **非局所補正の具体例** (`DFT/Functionals/NLCExamples.lean`) — NonLocalCorrection の4つの具体的インスタンス（自明・点差分・離散ラプラシアン・Coulomb）、公理系の無矛盾性証明
-- **変分的非局所補正** (`DFT/Functionals/PhysicalNLC.lean`) — E[ρ] = -∫(ρ(x)-ρ(x+1))²dx に対する v = δE/δρ（離散ラプラシアン）の変分関係の完全証明、平行移動不変性による交差項の内積表現
-- **カーネル型非局所汎関数** (`DFT/Functionals/KernelNLC.lean`) — E[ρ] = -∬ρ(x)K(x-y)ρ(y)dxdy に対する v = -2(K*ρ) の変分関係の完全証明、Fubini の定理によるカーネル対称性
+- **Basic definitions** (`AutoStudy/DFT/Basic.lean`) - inner products, expectation values, eigenstates, and electron density
+- **Explicit Hamiltonians** (`AutoStudy/DFT/ExplicitHamiltonian.lean`) - structured `T + V_ext + V_ee` Hamiltonians and expectation decomposition
+- **Hohenberg-Kohn first theorem** (`AutoStudy/DFT/HohenbergKohn.lean`) - uniqueness-style results for external potentials and explicit-Hamiltonian variants
+- **Variational principle** (`AutoStudy/DFT/VariationalPrinciple.lean`) - ground-state minimization, strict inequalities for non-degenerate states, and Rayleigh-Ritz style lemmas
+- **Hohenberg-Kohn second theorem** (`AutoStudy/DFT/HohenbergKohnSecond.lean`) - energy minimization, `v`-representability, and abstract constrained-search / Levy-Lieb style interfaces
+- **Kohn-Sham equations** (`AutoStudy/DFT/KohnSham.lean`) - Kohn-Sham systems, density positivity, particle-number conservation, effective potentials, self-consistency, and Euler-Lagrange style stationarity conditions
+- **Three-dimensional many-body DFT layer** (`AutoStudy/DFT/ManyBody3D.lean`) - complex-valued wavefunctions, antisymmetry, `N`-representability, concrete external-energy terms, Hartree-style energy, and abstract/concrete bridges for many-body HK theory
+- **Self-adjoint operators** (`AutoStudy/DFT/SelfAdjoint.lean`) - self-adjointness, orthogonality of eigenstates, and matrix-element properties
+- **Hellmann-Feynman theorem** (`AutoStudy/DFT/HellmannFeynman.lean`) - energy derivatives from perturbation expectations and eigenvalue perturbation relations
+- **Exchange-correlation functionals** (`AutoStudy/DFT/ExchangeCorrelation.lean`) - the `XCFunctional` structure and local / semi-local functionals
+- **Coordinate scaling** (`AutoStudy/DFT/Scaling.lean`) - density scaling maps, composition rules, and scaling constraints
+- **Functional derivatives** (`AutoStudy/DFT/FunctionalDerivative.lean`) - Gateaux derivatives, linear functionals, additivity, and scalar multiplication
+- **Exact constraints** (`AutoStudy/DFT/ExactConstraints.lean`) - nonpositivity, Lieb-Oxford bounds, self-interaction conditions, and uniform-density limits
+- **Sum rules** (`AutoStudy/DFT/ExactConstraints/SumRules.lean`) - exchange/correlation hole sum rules and hole nonpositivity
+- **Asymptotic properties** (`AutoStudy/DFT/ExactConstraints/Asymptotic.lean`) - long-range behavior `v_xc -> -1/r`, density limits, asymptotic limitations of local potentials, and asymptotically corrected potentials
+- **Size consistency** (`AutoStudy/DFT/ExactConstraints/SizeConsistency.lean`) - size consistency, translation invariance, convexity, and positive homogeneity
+- **LDA** (`AutoStudy/DFT/LDA.lean`) - local density approximation, nonpositivity results, and compatibility with Lieb-Oxford bounds
+- **GGA** (`AutoStudy/DFT/GGA.lean`) - generalized gradient approximation, reduction to LDA, and bounded enhancement factors
+- **Constraint comparison table** (`AutoStudy/DFT/Functionals/Comparison.lean`) - type-level comparison of exact constraints for LDA and GGA
+- **ACG functional** (`AutoStudy/DFT/Functionals/NewFunctional.lean`) - a GGA + nonlocal-correction functional with proofs of six exact constraints
+- **Model potentials** (`AutoStudy/DFT/ModelPotential.lean`) - a framework for defining potentials directly without going through an energy functional
+- **LB94** (`AutoStudy/DFT/Functionals/LB94.lean`) - the van Leeuwen-Baerends asymptotically corrected potential, with reduction and asymptotic results
+- **LB94 asymptotics** (`AutoStudy/DFT/Functionals/LB94Asymptotic.lean`) - a complete proof of `-1/r` asymptotic decay for exponentially decaying densities
+- **Nonlocal correction examples** (`AutoStudy/DFT/Functionals/NLCExamples.lean`) - several concrete instances of `NonLocalCorrection` and consistency checks
+- **Variational nonlocal correction** (`AutoStudy/DFT/Functionals/PhysicalNLC.lean`) - a complete variational proof for a discrete-Laplacian-style nonlocal correction
+- **Kernel-based nonlocal functional** (`AutoStudy/DFT/Functionals/KernelNLC.lean`) - a complete variational proof for a kernel-based nonlocal correction using Fubini-style symmetry arguments
 
-全ての定理は `sorry` なしで完全に証明済み。
+The current development builds without `sorry`.
 
-## ビルド
+## Build
 
 ```bash
-# Nix flake 環境
 nix develop --command lake build
 ```
 
-## 依存
+## Dependencies
 
-- Lean 4 (v4.29.0-rc4)
-- Mathlib (v4.29.0-rc4)
+- Lean 4 (`v4.29.0-rc4`)
+- Mathlib (`v4.29.0-rc4`)
