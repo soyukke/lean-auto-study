@@ -38,11 +38,20 @@ def manyBodyProbabilityDensity {N : ℕ}
     (Ψ : ManyBodyWavefunction3D N) : Configuration3D N → ℝ :=
   fun X => Complex.normSq (Ψ X)
 
-/-- 波動関数由来の 1 粒子密度を与える抽象化。 -/
+/-- 波動関数由来の 1 粒子密度を与える抽象化。
+    density_determined_by_probability により、
+    密度が |Ψ|² のみから決まることが保証され、
+    densityOf が波動関数の位相に依存しない物理的な 1 体密度であることを表す。 -/
 structure DensityProjection3D (N : ℕ) where
   densityOf : ManyBodyWavefunction3D N → Position3D → ℝ
   nonneg : ∀ Ψ x, 0 ≤ densityOf Ψ x
   integral_eq_particleNumber : ∀ Ψ, densityIntegral3D (densityOf Ψ) = N
+  /-- 密度は確率分布 |Ψ|² のみから決まる:
+      2 つの波動関数が同じ |Ψ|² を持てば同じ密度を与える。
+      これは 1 体縮約密度行列の対角成分が |Ψ|² の marginal であることの帰結。 -/
+  density_determined_by_probability : ∀ Ψ₁ Ψ₂,
+    (∀ X, Complex.normSq (Ψ₁ X) = Complex.normSq (Ψ₂ X)) →
+    densityOf Ψ₁ = densityOf Ψ₂
 
 /-- 3 次元 1 粒子密度は非負。 -/
 theorem probabilityDensity3D_nonneg (ψ : SingleWavefunction3D) (x : Position3D) :
@@ -173,27 +182,46 @@ theorem nRepresentable3D_integral {N : ℕ} {ρ : Position3D → ℝ}
 -- 多体内積 (Task 1: 独立フィールド削減の基盤)
 -- ============================================================
 
-/-- 多体波動関数の内積。
+/-- 多体波動関数の ℂ 値内積。
+    複素 Hilbert 空間の内積として、共役対称性・正定値性・第 2 引数の線形性を持つ。
+    物理学の慣習に従い、第 1 引数に反線形、第 2 引数に線形 (physicist convention)。
+
     isNormalized / expectation をハミルトニアンから導出するための基盤。 -/
 structure ManyBodyInnerProduct3D (N : ℕ) where
-  inner : ManyBodyWavefunction3D N → ManyBodyWavefunction3D N → ℝ
-  symmetric : ∀ Ψ Φ, inner Ψ Φ = inner Φ Ψ
-  /-- 実スカラー倍の線形性: ⟨Ψ | cΦ⟩ = c ⟨Ψ|Φ⟩ -/
-  real_smul_right : ∀ (c : ℝ) Ψ Φ,
-    inner Ψ (fun X => (↑c : ℂ) * Φ X) = c * inner Ψ Φ
+  inner : ManyBodyWavefunction3D N → ManyBodyWavefunction3D N → ℂ
+  /-- 共役対称性: ⟨Ψ|Φ⟩ = conj(⟨Φ|Ψ⟩) -/
+  conjugate_symmetric : ∀ Ψ Φ, inner Ψ Φ = starRingEnd ℂ (inner Φ Ψ)
+  /-- 正定値性: ⟨Ψ|Ψ⟩ ≥ 0 -/
+  positive_definite : ∀ Ψ, 0 ≤ (inner Ψ Ψ).re
+  /-- 非退化性: ⟨Ψ|Ψ⟩ = 0 ⇔ Ψ = 0 -/
+  definite : ∀ Ψ, inner Ψ Ψ = 0 → ∀ X, Ψ X = 0
+  /-- 第 2 引数の線形性: ⟨Ψ | cΦ⟩ = c ⟨Ψ|Φ⟩ -/
+  linear_right : ∀ (c : ℂ) Ψ Φ,
+    inner Ψ (fun X => c * Φ X) = c * inner Ψ Φ
 
 namespace ManyBodyInnerProduct3D
 
 variable {N : ℕ} (ip : ManyBodyInnerProduct3D N)
 
-/-- 正規化条件 (内積から導出) -/
+/-- 共役対称性より ⟨Ψ|Ψ⟩ は実数。 -/
+theorem inner_self_real (Ψ : ManyBodyWavefunction3D N) :
+    (ip.inner Ψ Ψ).im = 0 := by
+  have h := ip.conjugate_symmetric Ψ Ψ
+  have him : (ip.inner Ψ Ψ).im = -(ip.inner Ψ Ψ).im := by
+    conv_lhs => rw [h]
+    simp [Complex.conj_im]
+  linarith
+
+/-- 正規化条件 (内積から導出): ⟨Ψ|Ψ⟩ = 1 -/
 def isNormalized (Ψ : ManyBodyWavefunction3D N) : Prop :=
   ip.inner Ψ Ψ = 1
 
-/-- 演算子の期待値 (内積から導出) -/
+/-- 演算子の期待値 (内積から導出): Re⟨Ψ|AΨ⟩
+    自己共役演算子に対しては虚部が 0 となるが、
+    一般的に実部を取ることで ℝ 値の物理量を得る。 -/
 def expectation (A : ManyBodyWavefunction3D N → ManyBodyWavefunction3D N)
     (Ψ : ManyBodyWavefunction3D N) : ℝ :=
-  ip.inner Ψ (A Ψ)
+  (ip.inner Ψ (A Ψ)).re
 
 /-- 固有状態の期待値は固有値に等しい。 -/
 theorem eigenstate_expectation_eq
@@ -202,8 +230,14 @@ theorem eigenstate_expectation_eq
     (heig : A Ψ = fun X => (↑E : ℂ) * Ψ X)
     (hnorm : ip.isNormalized Ψ) :
     ip.expectation A Ψ = E := by
-  unfold expectation
-  rw [heig, ip.real_smul_right, hnorm, mul_one]
+  unfold expectation isNormalized at *
+  rw [heig, ip.linear_right, hnorm, mul_one]
+  exact Complex.ofReal_re E
+
+/-- 実スカラー倍の線形性 (linear_right の系) -/
+theorem real_smul_right (c : ℝ) (Ψ Φ : ManyBodyWavefunction3D N) :
+    ip.inner Ψ (fun X => (↑c : ℂ) * Φ X) = (↑c : ℂ) * ip.inner Ψ Φ :=
+  ip.linear_right (↑c) Ψ Φ
 
 end ManyBodyInnerProduct3D
 

@@ -96,7 +96,10 @@ theorem energyFunctional_add_ext
     各密度に対して、その密度を実現する波動関数上の内部エネルギー下限を与える。
 
     F_LL[ρ] = min_{ψ→ρ} ⟨ψ|H_internal|ψ⟩
-    ここで H_internal は運動エネルギー + 電子間相互作用 (外部ポテンシャルを含まない)。 -/
+    ここで H_internal は運動エネルギー + 電子間相互作用 (外部ポテンシャルを含まない)。
+
+    attained により infimum が達成されることを保証し、
+    波動関数レベルの変分原理から密度レベルの変分原理を導出可能にする。 -/
 structure LevyLiebFunctional where
   /-- 内部ハミルトニアン (運動エネルギー + 電子間相互作用) -/
   H_internal : (ℝ → ℝ) → (ℝ → ℝ)
@@ -111,6 +114,12 @@ structure LevyLiebFunctional where
       内部ハミルトニアンの期待値の下界。 -/
   lower_bound : ∀ {ρ ψ}, admissible ρ → IsNormalized ψ → electronDensity ψ = ρ →
     F_LL ρ ≤ expectationValue H_internal ψ
+  /-- Constrained search の infimum 達成:
+      各許容密度に対して、F_LL[ρ] を達成する波動関数が存在する。
+      これにより F_LL[ρ] = min (inf ではなく min) が保証される。 -/
+  attained : ∀ {ρ}, admissible ρ →
+    ∃ ψ : ℝ → ℝ, IsNormalized ψ ∧ electronDensity ψ = ρ ∧
+      F_LL ρ = expectationValue H_internal ψ
 
 /-- abstract Levy-Lieb データから constrained-search 型の第二定理を得る。 -/
 theorem hohenberg_kohn_second_theorem_constrained
@@ -135,6 +144,33 @@ theorem constrained_energy_minimizer
       energyFunctional LL.F_LL v_ext ρ₀ ≤ energyFunctional LL.F_LL v_ext ρ := by
   intro ρ hρ
   exact hohenberg_kohn_second_theorem_constrained LL v_ext ρ₀ E₀ hρ₀ hground hvar ρ hρ
+
+/-- 波動関数レベルの変分原理から密度レベルの変分原理を導出する。
+    Hohenberg-Kohn 第二定理の本質的な証明:
+    hvar (∀ ρ, E₀ ≤ E[ρ]) を直接仮定するのではなく、
+    GroundState の変分原理 + Levy-Lieb constrained search から導く。
+
+    証明の構造:
+    1. LL.attained から、F_LL[ρ] を達成する ψ_opt を得る
+    2. E₀ ≤ ⟨ψ_opt|H|ψ_opt⟩ (波動関数変分原理)
+    3. ⟨ψ_opt|H|ψ_opt⟩ = ⟨ψ_opt|H_internal|ψ_opt⟩ + ∫v·ρ (ハミルトニアン分解)
+    4. = F_LL[ρ] + ∫v·ρ = E[ρ] (constrained search の attained) -/
+theorem hohenberg_kohn_second_from_wavefunction_variational
+    (LL : LevyLiebFunctional) (gs : GroundState) (v_ext : ℝ → ℝ)
+    (hH : ∀ ψ, IsNormalized ψ →
+      expectationValue gs.H ψ =
+        expectationValue LL.H_internal ψ + ∫ x, v_ext x * electronDensity ψ x)
+    (_hρ₀ : LL.admissible (electronDensity gs.ψ₀))
+    (hground : energyFunctional LL.F_LL v_ext (electronDensity gs.ψ₀) = gs.E₀)
+    (ρ : ℝ → ℝ) (hρ : LL.admissible ρ) :
+    energyFunctional LL.F_LL v_ext (electronDensity gs.ψ₀) ≤
+      energyFunctional LL.F_LL v_ext ρ := by
+  rw [hground]
+  obtain ⟨ψ_opt, hnorm, hdens, hFLL⟩ := LL.attained hρ
+  have hvar := gs.variational ψ_opt hnorm
+  rw [hH ψ_opt hnorm, hdens] at hvar
+  unfold energyFunctional
+  linarith [hFLL.symm.le]
 
 /-- 3D 多電子の density functional を 1D 側の Levy-Lieb 風抽象へ落とすための最小インターフェース。 -/
 structure LevyLiebBridge3D (N : ℕ) where

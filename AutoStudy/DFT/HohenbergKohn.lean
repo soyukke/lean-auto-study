@@ -13,6 +13,7 @@
 -/
 import AutoStudy.DFT.Basic
 import AutoStudy.DFT.ExplicitHamiltonian
+import AutoStudy.DFT.VariationalPrinciple
 
 open MeasureTheory DFT
 
@@ -130,3 +131,39 @@ theorem hohenberg_kohn_first_theorem_explicit
     exact hpot2'
   exact hohenberg_kohn_first_theorem H₁.toOperator H₂.toOperator ψ₁ ψ₂ E₁ E₂
     hnorm1 hnorm2 heig1 heig2 hvar1 hvar2 δV hpot1 hpot2
+
+/-- 非縮退基底状態の定義:
+    正規化波動関数で期待値が E₀ に等しいものは ψ₀ のみ。 -/
+def IsNonDegenerate (gs : GroundState) : Prop :=
+  ∀ φ, IsNormalized φ → expectationValue gs.H φ = gs.E₀ → φ = gs.ψ₀
+
+/-- 非縮退版 Hohenberg-Kohn 第一定理。
+    hvar1/hvar2 (厳密不等式) を直接仮定する代わりに、
+    非縮退性と ψ₁ ≠ ψ₂ から導出する。 -/
+theorem hohenberg_kohn_first_theorem_nondegenerate
+    (H₁ H₂ : ExplicitHamiltonian)
+    (gs₁ gs₂ : GroundState)
+    (hH₁ : gs₁.H = H₁.toOperator) (hH₂ : gs₂.H = H₂.toOperator)
+    (hnd₁ : IsNonDegenerate gs₁) (hnd₂ : IsNonDegenerate gs₂)
+    (hne : gs₁.ψ₀ ≠ gs₂.ψ₀)
+    (hKinetic : H₁.kinetic = H₂.kinetic)
+    (hInteraction : H₁.interaction = H₂.interaction)
+    (hρ : electronDensity gs₁.ψ₀ = electronDensity gs₂.ψ₀)
+    (hint12₁ : H₁.IntegrableState gs₂.ψ₀)
+    (hint12₂ : H₂.IntegrableState gs₂.ψ₀)
+    (hint21₁ : H₁.IntegrableState gs₁.ψ₀)
+    (hint21₂ : H₂.IntegrableState gs₁.ψ₀) :
+    False := by
+  have hvar1 : gs₁.E₀ < expectationValue H₁.toOperator gs₂.ψ₀ := by
+    rw [← hH₁]
+    exact gs₁.strict_variational hnd₁ gs₂.ψ₀ gs₂.normalized (Ne.symm hne)
+  have hvar2 : gs₂.E₀ < expectationValue H₂.toOperator gs₁.ψ₀ := by
+    rw [← hH₂]
+    exact gs₂.strict_variational hnd₂ gs₁.ψ₀ gs₁.normalized hne
+  exact hohenberg_kohn_first_theorem_explicit H₁ H₂
+    gs₁.ψ₀ gs₂.ψ₀ gs₁.E₀ gs₂.E₀
+    gs₁.normalized gs₂.normalized
+    (hH₁ ▸ gs₁.eigenstate) (hH₂ ▸ gs₂.eigenstate)
+    hvar1 hvar2
+    hKinetic hInteraction hρ
+    hint12₁ hint12₂ hint21₁ hint21₂

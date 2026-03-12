@@ -218,4 +218,70 @@ theorem orbitalEnergySum_eq_expectation_sum {N : ℕ}
   ext i
   exact ks.energy_eq_expectation i
 
+-- ============================================================
+-- Slater 行列式と非相互作用 v-representability
+-- ============================================================
+
+/-- Slater 行列式: N 個の 1 粒子軌道から構成される反対称波動関数。
+    Kohn-Sham 系の波動関数は Slater 行列式で表される。
+
+    Ψ_SD(r₁,...,rₙ) = (1/√N!) det[φᵢ(rⱼ)]
+
+    ここでは 1D 簡略化のため、φᵢ : ℝ → ℝ の実軌道を用いる。 -/
+structure SlaterDeterminant (N : ℕ) where
+  /-- 1 粒子軌道 -/
+  orbitals : Fin N → (ℝ → ℝ)
+  /-- 正規化条件 -/
+  normalized : ∀ i, IsNormalized (orbitals i)
+  /-- 直交性 -/
+  orthogonal : ∀ i j, i ≠ j → innerProduct (orbitals i) (orbitals j) = 0
+
+namespace SlaterDeterminant
+
+variable {N : ℕ} (sd : SlaterDeterminant N)
+
+/-- Slater 行列式の密度: ρ(x) = Σᵢ |φᵢ(x)|² -/
+noncomputable def density : ℝ → ℝ :=
+  fun x => ∑ i : Fin N, electronDensity (sd.orbitals i) x
+
+/-- Slater 行列式密度は非負 -/
+theorem density_nonneg (x : ℝ) : 0 ≤ sd.density x :=
+  Finset.sum_nonneg fun i _ => electronDensity_nonneg (sd.orbitals i) x
+
+/-- 正規直交条件 -/
+theorem orthonormal (i j : Fin N) :
+    innerProduct (sd.orbitals i) (sd.orbitals j) =
+      if i = j then 1 else 0 := by
+  by_cases h : i = j
+  · subst h; rw [if_pos rfl]; exact (sd.normalized i).norm_eq
+  · rw [if_neg h]; exact sd.orthogonal i j h
+
+end SlaterDeterminant
+
+/-- KohnShamSystem から SlaterDeterminant を構成する。
+    KS 系の軌道は Slater 行列式を形成する。 -/
+def KohnShamSystem.toSlaterDeterminant {N : ℕ}
+    (ks : KohnShamSystem N) : SlaterDeterminant N where
+  orbitals := ks.orbitals
+  normalized := ks.normalized
+  orthogonal := ks.orthogonal
+
+/-- KS 系の密度は Slater 行列式の密度に一致する -/
+theorem KohnShamSystem.density_eq_slater_density {N : ℕ}
+    (ks : KohnShamSystem N) :
+    ks.density = ks.toSlaterDeterminant.density := by
+  rfl
+
+/-- 非相互作用 v-representability:
+    密度がある非相互作用系の基底状態 (Slater 行列式) として
+    実現可能であることを表す。 -/
+def IsNoninteractingVRepresentable (ρ : ℝ → ℝ) : Prop :=
+  ∃ (N : ℕ) (ks : KohnShamSystem N), ks.density = ρ
+
+/-- KS 系の密度は非相互作用 v-representable -/
+theorem KohnShamSystem.density_noninteracting_vrepresentable
+    {N : ℕ} (ks : KohnShamSystem N) :
+    IsNoninteractingVRepresentable ks.density :=
+  ⟨N, ks, rfl⟩
+
 end DFT
