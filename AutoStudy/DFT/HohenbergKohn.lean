@@ -167,3 +167,50 @@ theorem hohenberg_kohn_first_theorem_nondegenerate
     hvar1 hvar2
     hKinetic hInteraction hρ
     hint12₁ hint12₂ hint21₁ hint21₂
+
+-- ============================================================
+-- HK 第一定理の正の形式 (positive statements)
+-- ============================================================
+
+/-- HK 第一定理 (対偶形式):
+    異なる外部ポテンシャルを持つ非縮退基底状態の密度は異なる。
+    これは `hohenberg_kohn_first_theorem_nondegenerate` の対偶であり、
+    「基底状態密度が外部ポテンシャルを一意に決定する」ことの直接的な表現。 -/
+theorem hohenberg_kohn_different_potential_different_density
+    (H₁ H₂ : ExplicitHamiltonian)
+    (gs₁ gs₂ : GroundState)
+    (hH₁ : gs₁.H = H₁.toOperator) (hH₂ : gs₂.H = H₂.toOperator)
+    (hnd₁ : IsNonDegenerate gs₁) (hnd₂ : IsNonDegenerate gs₂)
+    (hne : gs₁.ψ₀ ≠ gs₂.ψ₀)
+    (hKinetic : H₁.kinetic = H₂.kinetic)
+    (hInteraction : H₁.interaction = H₂.interaction)
+    (hint12₁ : H₁.IntegrableState gs₂.ψ₀)
+    (hint12₂ : H₂.IntegrableState gs₂.ψ₀)
+    (hint21₁ : H₁.IntegrableState gs₁.ψ₀)
+    (hint21₂ : H₂.IntegrableState gs₁.ψ₀) :
+    electronDensity gs₁.ψ₀ ≠ electronDensity gs₂.ψ₀ := by
+  intro hρ
+  exact hohenberg_kohn_first_theorem_nondegenerate H₁ H₂ gs₁ gs₂
+    hH₁ hH₂ hnd₁ hnd₂ hne hKinetic hInteraction hρ
+    hint12₁ hint12₂ hint21₁ hint21₂
+
+/-- HK 第一定理 (一意性形式):
+    同じ密度を持つ 2 つの非縮退基底状態は同じ波動関数を持つ。
+    すなわち、基底状態密度が外部ポテンシャルを (定数差を除いて) 一意に決定する。 -/
+theorem hohenberg_kohn_density_determines_wavefunction
+    (H₁ H₂ : ExplicitHamiltonian)
+    (gs₁ gs₂ : GroundState)
+    (hH₁ : gs₁.H = H₁.toOperator) (hH₂ : gs₂.H = H₂.toOperator)
+    (hnd₁ : IsNonDegenerate gs₁) (hnd₂ : IsNonDegenerate gs₂)
+    (hKinetic : H₁.kinetic = H₂.kinetic)
+    (hInteraction : H₁.interaction = H₂.interaction)
+    (hρ : electronDensity gs₁.ψ₀ = electronDensity gs₂.ψ₀)
+    (hint12₁ : H₁.IntegrableState gs₂.ψ₀)
+    (hint12₂ : H₂.IntegrableState gs₂.ψ₀)
+    (hint21₁ : H₁.IntegrableState gs₁.ψ₀)
+    (hint21₂ : H₂.IntegrableState gs₁.ψ₀) :
+    gs₁.ψ₀ = gs₂.ψ₀ := by
+  by_contra hne
+  exact hohenberg_kohn_first_theorem_nondegenerate H₁ H₂ gs₁ gs₂
+    hH₁ hH₂ hnd₁ hnd₂ hne hKinetic hInteraction hρ
+    hint12₁ hint12₂ hint21₁ hint21₂

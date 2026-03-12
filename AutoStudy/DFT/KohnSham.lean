@@ -222,13 +222,15 @@ theorem orbitalEnergySum_eq_expectation_sum {N : ℕ}
 -- Slater 行列式と非相互作用 v-representability
 -- ============================================================
 
-/-- Slater 行列式: N 個の 1 粒子軌道から構成される反対称波動関数。
-    Kohn-Sham 系の波動関数は Slater 行列式で表される。
-
+/-- 正規直交軌道系: N 個の正規直交 1 粒子軌道の集合。
+    Kohn-Sham 系において Slater 行列式
     Ψ_SD(r₁,...,rₙ) = (1/√N!) det[φᵢ(rⱼ)]
+    の構成要素となる軌道束。
 
-    ここでは 1D 簡略化のため、φᵢ : ℝ → ℝ の実軌道を用いる。 -/
-structure SlaterDeterminant (N : ℕ) where
+    注意: この構造体は行列式そのものではなく正規直交軌道系を表す。
+    行列式の構成は Slater 行列式の多体波動関数としての定式化であり、
+    ここでは 1D 簡略化モデルのため軌道レベルの性質のみを扱う。 -/
+structure OrthonormalOrbitalSystem (N : ℕ) where
   /-- 1 粒子軌道 -/
   orbitals : Fin N → (ℝ → ℝ)
   /-- 正規化条件 -/
@@ -236,40 +238,40 @@ structure SlaterDeterminant (N : ℕ) where
   /-- 直交性 -/
   orthogonal : ∀ i j, i ≠ j → innerProduct (orbitals i) (orbitals j) = 0
 
-namespace SlaterDeterminant
+namespace OrthonormalOrbitalSystem
 
-variable {N : ℕ} (sd : SlaterDeterminant N)
+variable {N : ℕ} (oos : OrthonormalOrbitalSystem N)
 
-/-- Slater 行列式の密度: ρ(x) = Σᵢ |φᵢ(x)|² -/
+/-- 軌道系の密度: ρ(x) = Σᵢ |φᵢ(x)|² -/
 noncomputable def density : ℝ → ℝ :=
-  fun x => ∑ i : Fin N, electronDensity (sd.orbitals i) x
+  fun x => ∑ i : Fin N, electronDensity (oos.orbitals i) x
 
-/-- Slater 行列式密度は非負 -/
-theorem density_nonneg (x : ℝ) : 0 ≤ sd.density x :=
-  Finset.sum_nonneg fun i _ => electronDensity_nonneg (sd.orbitals i) x
+/-- 軌道系密度は非負 -/
+theorem density_nonneg (x : ℝ) : 0 ≤ oos.density x :=
+  Finset.sum_nonneg fun i _ => electronDensity_nonneg (oos.orbitals i) x
 
 /-- 正規直交条件 -/
 theorem orthonormal (i j : Fin N) :
-    innerProduct (sd.orbitals i) (sd.orbitals j) =
+    innerProduct (oos.orbitals i) (oos.orbitals j) =
       if i = j then 1 else 0 := by
   by_cases h : i = j
-  · subst h; rw [if_pos rfl]; exact (sd.normalized i).norm_eq
-  · rw [if_neg h]; exact sd.orthogonal i j h
+  · subst h; rw [if_pos rfl]; exact (oos.normalized i).norm_eq
+  · rw [if_neg h]; exact oos.orthogonal i j h
 
-end SlaterDeterminant
+end OrthonormalOrbitalSystem
 
-/-- KohnShamSystem から SlaterDeterminant を構成する。
-    KS 系の軌道は Slater 行列式を形成する。 -/
-def KohnShamSystem.toSlaterDeterminant {N : ℕ}
-    (ks : KohnShamSystem N) : SlaterDeterminant N where
+/-- KohnShamSystem から OrthonormalOrbitalSystem を構成する。
+    KS 系の軌道は正規直交軌道系を形成する。 -/
+def KohnShamSystem.toOrthonormalOrbitalSystem {N : ℕ}
+    (ks : KohnShamSystem N) : OrthonormalOrbitalSystem N where
   orbitals := ks.orbitals
   normalized := ks.normalized
   orthogonal := ks.orthogonal
 
-/-- KS 系の密度は Slater 行列式の密度に一致する -/
-theorem KohnShamSystem.density_eq_slater_density {N : ℕ}
+/-- KS 系の密度は正規直交軌道系の密度に一致する -/
+theorem KohnShamSystem.density_eq_orbital_density {N : ℕ}
     (ks : KohnShamSystem N) :
-    ks.density = ks.toSlaterDeterminant.density := by
+    ks.density = ks.toOrthonormalOrbitalSystem.density := by
   rfl
 
 /-- 非相互作用 v-representability:

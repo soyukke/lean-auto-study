@@ -15,11 +15,15 @@ open MeasureTheory DFT
 
 namespace DFT
 
-/-- N-表現可能密度 (1D): ある正規化波動関数の電子密度として実現可能。
+/-- N-表現可能密度 (1D): N 個の正規直交軌道の密度の和として表現可能。
+    多電子 DFT における N-representability の 1D 簡略化版。
+    密度 ρ(x) = Σᵢ |φᵢ(x)|² となる N 個の正規化軌道 φᵢ が存在する。
     注意: これは v-表現可能性より弱い条件であり、
     波動関数がある外部ポテンシャルの基底状態であることは要求しない。 -/
-def IsNRepresentable1D (ρ : ℝ → ℝ) : Prop :=
-  ∃ ψ : ℝ → ℝ, IsNormalized ψ ∧ electronDensity ψ = ρ
+def IsNRepresentable1D (N : ℕ) (ρ : ℝ → ℝ) : Prop :=
+  ∃ orbitals : Fin N → (ℝ → ℝ),
+    (∀ i, IsNormalized (orbitals i)) ∧
+    ρ = fun x => ∑ i : Fin N, electronDensity (orbitals i) x
 
 /-- v-表現可能密度: ある外部ポテンシャルの基底状態密度として実現可能。
     これは N-表現可能性より強い条件であり、
@@ -32,24 +36,31 @@ def IsVRepresentable (ρ : ℝ → ℝ) : Prop :=
 noncomputable def energyFunctional (F : (ℝ → ℝ) → ℝ) (v_ext : ℝ → ℝ) (ρ : ℝ → ℝ) : ℝ :=
   F ρ + ∫ x, v_ext x * ρ x
 
-/-- v-表現可能密度は N-表現可能 -/
+/-- v-表現可能密度は 1 粒子表現可能 (1D toy model では N=1) -/
 theorem isVRepresentable_isNRepresentable {ρ : ℝ → ℝ}
-    (h : IsVRepresentable ρ) : IsNRepresentable1D ρ := by
+    (h : IsVRepresentable ρ) : IsNRepresentable1D 1 ρ := by
   rcases h with ⟨gs, hρ⟩
-  exact ⟨gs.ψ₀, gs.normalized, hρ⟩
+  exact ⟨fun _ => gs.ψ₀, fun _ => gs.normalized, by
+    ext x; rw [← hρ]; simp⟩
 
 /-- 基底状態密度は v-表現可能 -/
 theorem groundState_density_vrepresentable (gs : GroundState) :
     IsVRepresentable (electronDensity gs.ψ₀) :=
   ⟨gs, rfl⟩
 
-/-- 基底状態密度は N-表現可能 -/
+/-- 基底状態密度は 1 粒子表現可能 -/
 theorem groundState_density_nrepresentable (gs : GroundState) :
-    IsNRepresentable1D (electronDensity gs.ψ₀) :=
-  ⟨gs.ψ₀, gs.normalized, rfl⟩
+    IsNRepresentable1D 1 (electronDensity gs.ψ₀) :=
+  ⟨fun _ => gs.ψ₀, fun _ => gs.normalized, by ext x; simp⟩
 
-/-- Hohenberg-Kohn 第二定理:
+/-- Hohenberg-Kohn 第二定理 (公理的形式):
     基底状態密度 ρ₀ はエネルギー汎関数 E[ρ] を最小化する。
+
+    注意: この版は hground と hvar を直接仮定しており、
+    結論は仮定の trivial な言い換えである。
+    本質的な証明は `hohenberg_kohn_second_from_wavefunction_variational` を参照。
+    そちらでは波動関数レベルの変分原理 + Levy-Lieb constrained search から
+    密度レベルの変分原理を導出している。
 
     物理的意味:
     - F[ρ] は普遍汎関数 (全てのクーロン系に共通)
@@ -177,7 +188,7 @@ structure LevyLiebBridge3D (N : ℕ) where
   DF3D : DensityFunctional3D N
   to1D : (Fin 3 → ℝ) → ℝ
   admissible_respects_projection : ∀ ρ, DF3D.admissible ρ →
-    IsNRepresentable1D (fun x => ρ (fun _ => to1D (fun _ => x)))
+    IsNRepresentable1D N (fun x => ρ (fun _ => to1D (fun _ => x)))
 
 /-- ManyBody3D 側の minimization principle は Levy-Lieb 風の constrained-search の見方と整合する。 -/
 theorem manyBody_second_theorem_bridge

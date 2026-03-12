@@ -195,9 +195,12 @@ structure ManyBodyInnerProduct3D (N : ℕ) where
   positive_definite : ∀ Ψ, 0 ≤ (inner Ψ Ψ).re
   /-- 非退化性: ⟨Ψ|Ψ⟩ = 0 ⇔ Ψ = 0 -/
   definite : ∀ Ψ, inner Ψ Ψ = 0 → ∀ X, Ψ X = 0
-  /-- 第 2 引数の線形性: ⟨Ψ | cΦ⟩ = c ⟨Ψ|Φ⟩ -/
+  /-- 第 2 引数の線形性 (スカラー倍): ⟨Ψ | cΦ⟩ = c ⟨Ψ|Φ⟩ -/
   linear_right : ∀ (c : ℂ) Ψ Φ,
     inner Ψ (fun X => c * Φ X) = c * inner Ψ Φ
+  /-- 第 2 引数の加法性: ⟨Ψ | Φ₁ + Φ₂⟩ = ⟨Ψ|Φ₁⟩ + ⟨Ψ|Φ₂⟩ -/
+  additive_right : ∀ Ψ Φ₁ Φ₂,
+    inner Ψ (fun X => Φ₁ X + Φ₂ X) = inner Ψ Φ₁ + inner Ψ Φ₂
 
 namespace ManyBodyInnerProduct3D
 
@@ -506,6 +509,19 @@ theorem hohenberg_kohn_first_theorem_3d
   rw [hpot1] at hvar1
   rw [hpot2] at hvar2
   linarith
+
+/-- 3 次元多電子版 HK 第一定理 (対偶形式):
+    厳密変分不等式が成立するとき、基底状態密度は異なる。 -/
+theorem hohenberg_kohn_different_density_3d
+    (gs₁ gs₂ : ManyBodyGroundState3D N)
+    (hvar1 : gs₁.energy < gs₁.expectation gs₂.state.wavefunction)
+    (hvar2 : gs₂.energy < gs₂.expectation gs₁.state.wavefunction)
+    (δV : ℝ)
+    (hpot1 : gs₁.expectation gs₂.state.wavefunction = gs₂.energy + δV)
+    (hpot2 : gs₂.expectation gs₁.state.wavefunction = gs₁.energy - δV) :
+    gs₁.state.density ≠ gs₂.state.density := by
+  intro hρ
+  exact hohenberg_kohn_first_theorem_3d gs₁ gs₂ hρ hvar1 hvar2 δV hpot1 hpot2
 
 /-- 3 次元多電子版 HK の explicit 形式。 -/
 theorem hohenberg_kohn_first_theorem_3d_explicit
