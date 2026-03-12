@@ -113,7 +113,8 @@ theorem hohenberg_kohn_first_theorem_explicit
       (fun x => H₁.vExt x - H₂.vExt x) ψ₁ ψ₂ hρ
   have hpot2' : expectationValue H₂.toOperator ψ₁ = expectationValue H₁.toOperator ψ₁ -
       externalEnergy (fun x => H₁.vExt x - H₂.vExt x) ψ₁ := by
-    have h := explicit_hamiltonian_expectation_shift H₂ H₁ hKinetic.symm hInteraction.symm ψ₁ hint21₂ hint21₁
+    have h := explicit_hamiltonian_expectation_shift
+      H₂ H₁ hKinetic.symm hInteraction.symm ψ₁ hint21₂ hint21₁
     have hneg : externalEnergy (fun x => H₂.vExt x - H₁.vExt x) ψ₁ =
         - externalEnergy (fun x => H₁.vExt x - H₂.vExt x) ψ₁ := by
       repeat rw [ExplicitHamiltonian.externalEnergy_eq]

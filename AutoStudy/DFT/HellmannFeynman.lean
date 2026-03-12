@@ -119,7 +119,7 @@ theorem eigenvalue_perturbation
   rw [show (fun x => E₁ * (ψ x * ψ x) + ε * (ψ x * ψ x)) =
       (fun x => (E₁ + ε) * (ψ x * ψ x)) from by ext x; ring]
   rw [integral_const_mul]
-  have : innerProduct ψ ψ = 1 := hnorm
+  have : innerProduct ψ ψ = 1 := hnorm.norm_eq
   change (E₁ + ε) * ∫ x, ψ x * ψ x = E₁ + ε
   rw [show (∫ x, ψ x * ψ x) = innerProduct ψ ψ from rfl, this, mul_one]
 

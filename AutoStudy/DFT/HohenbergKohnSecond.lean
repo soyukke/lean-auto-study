@@ -131,7 +131,8 @@ theorem constrained_energy_minimizer
     (hρ₀ : LL.admissible ρ₀)
     (hground : energyFunctional LL.F_LL v_ext ρ₀ = E₀)
     (hvar : ∀ ρ, LL.admissible ρ → E₀ ≤ energyFunctional LL.F_LL v_ext ρ) :
-    ∀ ρ, LL.admissible ρ → energyFunctional LL.F_LL v_ext ρ₀ ≤ energyFunctional LL.F_LL v_ext ρ := by
+    ∀ ρ, LL.admissible ρ →
+      energyFunctional LL.F_LL v_ext ρ₀ ≤ energyFunctional LL.F_LL v_ext ρ := by
   intro ρ hρ
   exact hohenberg_kohn_second_theorem_constrained LL v_ext ρ₀ E₀ hρ₀ hground hvar ρ hρ
 

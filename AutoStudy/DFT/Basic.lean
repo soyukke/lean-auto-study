@@ -2,7 +2,8 @@
   密度汎関数理論 (DFT) の基礎定義
 
   第一原理計算の数学的基礎を形式化する。
-  簡略化のため実数値1粒子波動関数を使用する。
+  簡略化のため実数値1粒子波動関数を使用する (1D toy model)。
+  3 次元多電子版は ManyBody3D.lean を参照。
 -/
 import Mathlib.MeasureTheory.Integral.Bochner.Basic
 import Mathlib.MeasureTheory.Measure.Haar.OfBasis
@@ -17,9 +18,11 @@ namespace DFT
 def innerProduct (ψ φ : ℝ → ℝ) : ℝ :=
   ∫ x, ψ x * φ x
 
-/-- 正規化条件 ⟨ψ|ψ⟩ = 1 -/
-def IsNormalized (ψ : ℝ → ℝ) : Prop :=
-  innerProduct ψ ψ = 1
+/-- 正規化条件: 可積分性を含む ⟨ψ|ψ⟩ = 1。
+    integral_undef に依存せず、可積分性を明示的に要求する。 -/
+structure IsNormalized (ψ : ℝ → ℝ) : Prop where
+  integrable : Integrable (fun x => ψ x * ψ x)
+  norm_eq : innerProduct ψ ψ = 1
 
 /-- 演算子の期待値 ⟨ψ|A|ψ⟩ = ∫ ψ(x) · (Aψ)(x) dx -/
 def expectationValue (A : (ℝ → ℝ) → (ℝ → ℝ)) (ψ : ℝ → ℝ) : ℝ :=
@@ -38,14 +41,10 @@ theorem electronDensity_nonneg (ψ : ℝ → ℝ) (x : ℝ) :
   mul_self_nonneg (ψ x)
 
 /-- 正規化条件は電子密度の可積分性を含意する。
-    ⟨ψ|ψ⟩ = 1 は ∫|ψ|² = 1 ≠ 0 を意味するため、
-    Lebesgue 積分の規約 (非可積分 → 積分値 0) と矛盾し、
-    |ψ|² は必ず可積分である。 -/
+    IsNormalized に integrable フィールドを持つため直接抽出できる。 -/
 theorem isNormalized_integrable (ψ : ℝ → ℝ) (hnorm : IsNormalized ψ) :
-    Integrable (electronDensity ψ) := by
-  by_contra hni
-  have : innerProduct ψ ψ = 0 := integral_undef hni
-  exact absurd hnorm (by rw [IsNormalized, this]; norm_num)
+    Integrable (electronDensity ψ) :=
+  hnorm.integrable
 
 /-- 固有状態条件と正規化条件のもとで、期待値の被積分関数は可積分。
     Aψ = Eψ なら ψ(x)·(Aψ)(x) = E·|ψ(x)|² であり、
@@ -63,7 +62,7 @@ theorem electronDensity_integral_one (ψ : ℝ → ℝ)
     (hnorm : IsNormalized ψ) :
     ∫ x, electronDensity ψ x = 1 := by
   change innerProduct ψ ψ = 1
-  exact hnorm
+  exact hnorm.norm_eq
 
 /-- 固有状態の期待値は固有値に等しい:
     Aψ = Eψ かつ ⟨ψ|ψ⟩ = 1 ならば ⟨ψ|A|ψ⟩ = E
@@ -83,8 +82,24 @@ theorem eigenstate_expectation_eq
   unfold expectationValue
   simp_rw [key]
   rw [integral_const_mul]
-  have : innerProduct ψ ψ = 1 := hnorm
+  have hone : innerProduct ψ ψ = 1 := hnorm.norm_eq
   change E * ∫ x, ψ x * ψ x = E
-  rw [show (∫ x, ψ x * ψ x) = innerProduct ψ ψ from rfl, this, mul_one]
+  rw [show (∫ x, ψ x * ψ x) = innerProduct ψ ψ from rfl, hone, mul_one]
+
+-- ============================================================
+-- 3 次元の基本定義 (ManyBody3D.lean と共有)
+-- ============================================================
+
+/-- 3 次元位置ベクトル。 -/
+abbrev Position3D := Fin 3 → ℝ
+
+/-- 3 次元の 1 粒子複素波動関数。 -/
+abbrev SingleWavefunction3D := Position3D → ℂ
+
+/-- N 電子の 3 次元配置。 -/
+abbrev Configuration3D (N : ℕ) := Fin N → Position3D
+
+/-- N 電子の多体複素波動関数。 -/
+abbrev ManyBodyWavefunction3D (N : ℕ) := Configuration3D N → ℂ
 
 end DFT

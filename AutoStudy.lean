@@ -8,6 +8,7 @@ import AutoStudy.DFT.VariationalPrinciple
 import AutoStudy.DFT.HohenbergKohnSecond
 import AutoStudy.DFT.KohnSham
 import AutoStudy.DFT.SelfAdjoint
+import AutoStudy.DFT.Operator
 import AutoStudy.DFT.HellmannFeynman
 import AutoStudy.DFT.ExchangeCorrelation
 import AutoStudy.DFT.Scaling

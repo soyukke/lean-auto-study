@@ -78,7 +78,8 @@ theorem expectation_decomposition (H : ExplicitHamiltonian) (ψ : ℝ → ℝ)
     ext x
     unfold electronDensity
     ring
-  rw [hExpand, integral_add hint.kinetic hRest, integral_add hExt' hint.interaction, externalEnergy_eq]
+  rw [hExpand, integral_add hint.kinetic hRest,
+    integral_add hExt' hint.interaction, externalEnergy_eq]
   rw [hExtVal]
   ring
 
