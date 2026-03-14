@@ -9,6 +9,7 @@
 -/
 import AutoStudy.DFT.Basic
 import AutoStudy.DFT.VariationalPrinciple
+import AutoStudy.DFT.ExplicitHamiltonian
 import AutoStudy.DFT.ManyBody3D
 
 open MeasureTheory DFT
@@ -25,11 +26,36 @@ def IsNRepresentable1D (N : ℕ) (ρ : ℝ → ℝ) : Prop :=
     (∀ i, IsNormalized (orbitals i)) ∧
     ρ = fun x => ∑ i : Fin N, electronDensity (orbitals i) x
 
-/-- v-表現可能密度: ある外部ポテンシャルの基底状態密度として実現可能。
+/-- v-表現可能密度 (簡略版): ある外部ポテンシャルの基底状態密度として実現可能。
     これは N-表現可能性より強い条件であり、
-    密度が具体的なハミルトニアンの基底状態から来ることを要求する。 -/
+    密度が具体的なハミルトニアンの基底状態から来ることを要求する。
+
+    より物理的に完全な定義は IsVRepresentableFor を参照。 -/
 def IsVRepresentable (ρ : ℝ → ℝ) : Prop :=
   ∃ gs : GroundState, electronDensity gs.ψ₀ = ρ
+
+/-- 拡張された v-表現可能性:
+    密度 ρ がある外部ポテンシャル vExt を持つハミルトニアン族の
+    N 粒子基底状態として実現可能。
+
+    IsVRepresentable との違い:
+    - 粒子数 N を明示
+    - 外部ポテンシャル vExt を保持
+    - 許容ハミルトニアン族 (kinetic + interaction 固定、vExt のみ変化) を明示
+    - ハミルトニアンが族に属することを保証 -/
+structure IsVRepresentableFor (ρ : ℝ → ℝ) where
+  /-- 粒子数 -/
+  N : ℕ
+  /-- 外部ポテンシャル -/
+  vExt : ℝ → ℝ
+  /-- 許容ハミルトニアン族 (vExt をパラメータとして ExplicitHamiltonian を生成) -/
+  hamiltonianFamily : (ℝ → ℝ) → ExplicitHamiltonian
+  /-- 実現する基底状態 -/
+  gs : GroundState
+  /-- ハミルトニアンが族に属する -/
+  hamiltonian_mem : gs.H = (hamiltonianFamily vExt).toOperator
+  /-- 密度の一致 -/
+  density_eq : electronDensity gs.ψ₀ = ρ
 
 /-- エネルギー汎関数 E[ρ] = F[ρ] + ∫ v_ext(x) · ρ(x) dx
     F: 普遍汎関数 (運動エネルギー + 電子間相互作用) -/
@@ -53,12 +79,12 @@ theorem groundState_density_nrepresentable (gs : GroundState) :
     IsNRepresentable1D 1 (electronDensity gs.ψ₀) :=
   ⟨fun _ => gs.ψ₀, fun _ => gs.normalized, by ext x; simp⟩
 
-/-- Hohenberg-Kohn 第二定理 (公理的形式):
+/-- [教育目的の trivial 版] Hohenberg-Kohn 第二定理 (公理的形式):
     基底状態密度 ρ₀ はエネルギー汎関数 E[ρ] を最小化する。
 
     注意: この版は hground と hvar を直接仮定しており、
     結論は仮定の trivial な言い換えである。
-    本質的な証明は `hohenberg_kohn_second_from_wavefunction_variational` を参照。
+    本質的な証明は `hohenberg_kohn_second_theorem_main` を参照。
     そちらでは波動関数レベルの変分原理 + Levy-Lieb constrained search から
     密度レベルの変分原理を導出している。
 
@@ -156,17 +182,16 @@ theorem constrained_energy_minimizer
   intro ρ hρ
   exact hohenberg_kohn_second_theorem_constrained LL v_ext ρ₀ E₀ hρ₀ hground hvar ρ hρ
 
-/-- 波動関数レベルの変分原理から密度レベルの変分原理を導出する。
-    Hohenberg-Kohn 第二定理の本質的な証明:
-    hvar (∀ ρ, E₀ ≤ E[ρ]) を直接仮定するのではなく、
-    GroundState の変分原理 + Levy-Lieb constrained search から導く。
+/-- Hohenberg-Kohn 第二定理 (本質的な証明):
+    波動関数レベルの変分原理 + Levy-Lieb constrained search から
+    密度レベルの変分原理を導出する。
 
     証明の構造:
     1. LL.attained から、F_LL[ρ] を達成する ψ_opt を得る
     2. E₀ ≤ ⟨ψ_opt|H|ψ_opt⟩ (波動関数変分原理)
     3. ⟨ψ_opt|H|ψ_opt⟩ = ⟨ψ_opt|H_internal|ψ_opt⟩ + ∫v·ρ (ハミルトニアン分解)
     4. = F_LL[ρ] + ∫v·ρ = E[ρ] (constrained search の attained) -/
-theorem hohenberg_kohn_second_from_wavefunction_variational
+theorem hohenberg_kohn_second_theorem_main
     (LL : LevyLiebFunctional) (gs : GroundState) (v_ext : ℝ → ℝ)
     (hH : ∀ ψ, IsNormalized ψ →
       expectationValue gs.H ψ =
@@ -182,6 +207,19 @@ theorem hohenberg_kohn_second_from_wavefunction_variational
   rw [hH ψ_opt hnorm, hdens] at hvar
   unfold energyFunctional
   linarith [hFLL.symm.le]
+
+/-- hohenberg_kohn_second_theorem_main の後方互換エイリアス。 -/
+theorem hohenberg_kohn_second_from_wavefunction_variational
+    (LL : LevyLiebFunctional) (gs : GroundState) (v_ext : ℝ → ℝ)
+    (hH : ∀ ψ, IsNormalized ψ →
+      expectationValue gs.H ψ =
+        expectationValue LL.H_internal ψ + ∫ x, v_ext x * electronDensity ψ x)
+    (hρ₀ : LL.admissible (electronDensity gs.ψ₀))
+    (hground : energyFunctional LL.F_LL v_ext (electronDensity gs.ψ₀) = gs.E₀)
+    (ρ : ℝ → ℝ) (hρ : LL.admissible ρ) :
+    energyFunctional LL.F_LL v_ext (electronDensity gs.ψ₀) ≤
+      energyFunctional LL.F_LL v_ext ρ :=
+  hohenberg_kohn_second_theorem_main LL gs v_ext hH hρ₀ hground ρ hρ
 
 /-- 3D 多電子の density functional を 1D 側の Levy-Lieb 風抽象へ落とすための最小インターフェース。 -/
 structure LevyLiebBridge3D (N : ℕ) where

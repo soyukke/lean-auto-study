@@ -1,6 +1,7 @@
 import AutoStudy.Sqrt2Irrational
 import AutoStudy.EnergyConservation
 import AutoStudy.DFT.Basic
+import AutoStudy.DFT.L2Function
 import AutoStudy.DFT.ManyBody3D
 import AutoStudy.DFT.ExplicitHamiltonian
 import AutoStudy.DFT.HohenbergKohn

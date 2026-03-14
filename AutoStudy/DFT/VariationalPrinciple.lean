@@ -167,4 +167,41 @@ theorem rayleigh_ritz_minimizer (φ : ℝ → ℝ) (hφ : IsNormalized φ) :
 
 end GroundState
 
+/-- Hamiltonian の性質から GroundState を構成するためのインターフェース。
+    GroundState を直接構成する代わりに、このクラスを経由することで
+    変分原理が Hamiltonian のスペクトル性質から導出されることを保証する。
+
+    推奨: GroundState を直接作るより、SpectralHamiltonian.toGroundState
+    または HasGroundState 経由で構成すべき。 -/
+class HasGroundState (H : (ℝ → ℝ) → ℝ → ℝ) where
+  /-- H に対応する基底状態 -/
+  groundState : GroundState
+  /-- 基底状態のハミルトニアンが H に一致する -/
+  hamiltonian_eq : groundState.H = H
+
+namespace HasGroundState
+
+variable {H : (ℝ → ℝ) → ℝ → ℝ} [inst : HasGroundState H]
+
+/-- HasGroundState から基底状態エネルギーを取得する。 -/
+def energy : ℝ := inst.groundState.E₀
+
+/-- HasGroundState から基底状態波動関数を取得する。 -/
+def wavefunction : ℝ → ℝ := inst.groundState.ψ₀
+
+/-- 変分原理: HasGroundState 経由。 -/
+theorem variational (φ : ℝ → ℝ) (hφ : IsNormalized φ) :
+    inst.groundState.E₀ ≤ expectationValue H φ := by
+  have h := inst.groundState.variational φ hφ
+  rw [inst.hamiltonian_eq] at h
+  exact h
+
+end HasGroundState
+
+/-- SpectralHamiltonian から HasGroundState インスタンスを構成する。 -/
+instance SpectralHamiltonian.toHasGroundState (SH : SpectralHamiltonian) :
+    HasGroundState SH.H where
+  groundState := SH.toGroundState
+  hamiltonian_eq := rfl
+
 end DFT

@@ -608,6 +608,31 @@ theorem ground_energy_eq_decomposed_energy
   exact (expectation_eq_decomposed_energy (gs := gs) decomp
     gs.state gs.state_normalized).symm
 
+/-- 3 次元多電子版の拡張された v-表現可能性:
+    密度 ρ がある外部ポテンシャル vExt を持つ N 粒子ハミルトニアンの
+    基底状態として実現可能。 -/
+structure IsVRepresentable3DFor (N : ℕ) (ρ : Position3D → ℝ) where
+  /-- 外部ポテンシャル -/
+  vExt : Position3D → ℝ
+  /-- 実現する基底状態 -/
+  gs : ManyBodyGroundState3D N
+  /-- 基底状態ハミルトニアンの外部ポテンシャルが vExt に一致する -/
+  potential_eq : gs.hamiltonian.vExt = vExt
+  /-- 密度の一致 -/
+  density_eq : gs.state.density = ρ
+
+/-- Hamiltonian の性質から ManyBodyGroundState3D を構成するためのインターフェース。
+    ManyBodyGroundState3D を直接構成する代わりに、このクラスを経由することで
+    変分原理が Hamiltonian + InnerProduct から導出されることを保証する。 -/
+class HasGroundState3D (N : ℕ) (H : ManyBodyHamiltonian3D N)
+    (ip : ManyBodyInnerProduct3D N) where
+  /-- H, ip に対応する基底状態 -/
+  groundState : ManyBodyGroundState3D N
+  /-- 基底状態のハミルトニアンが H に一致する -/
+  hamiltonian_eq : groundState.hamiltonian = H
+  /-- 基底状態の内積が ip に一致する -/
+  innerProd_eq : groundState.innerProd = ip
+
 end ManyBodyGroundState3D
 
 -- ============================================================
